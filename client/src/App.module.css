@@ -1,0 +1,109 @@
+.appShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  background: #f5f7fb;
+}
+
+.sidebar {
+  padding: 1.5rem;
+  background: #111827;
+  color: #f9fafb;
+}
+
+.brand {
+  margin-bottom: 2rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.navigationList {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navigationLink {
+  display: block;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #d1d5db;
+  text-decoration: none;
+}
+
+.navigationLink:hover {
+  background: #1f2937;
+  color: #fff;
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem 2rem;
+  background: #fff;
+}
+
+.topBar h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.userBadge {
+  border-radius: 999px;
+  background: #e0e7ff;
+  padding: 0.4rem 0.75rem;
+  color: #3730a3;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.mainContent {
+  padding: 2rem;
+}
+
+.welcomeCard {
+  max-width: 640px;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.welcomeCard h2 {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.welcomeCard p {
+  margin: 0;
+  color: #4b5563;
+}
+
+.eyebrow {
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .appShell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding-bottom: 1rem;
+  }
+}
+
