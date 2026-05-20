@@ -1,10 +1,13 @@
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
+export type ProjectStatus = 'planning' | 'active' | 'at-risk'
 
 export type Project = {
   id: string
   name: string
   description: string
   ownerId: string
+  status: ProjectStatus
+  updatedAt: string
 }
 
 export type User = {
@@ -22,4 +25,3 @@ export type Task = {
   dueDate: string
   updatedAt: string
 }
-
