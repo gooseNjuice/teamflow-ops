@@ -1,4 +1,5 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import DashboardPage from './pages/DashboardPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import styles from './App.module.css'
 
@@ -10,14 +11,7 @@ const navigationItems = [
   { label: 'Settings', path: '/settings' },
 ]
 
-const pages = [
-  {
-    path: '/dashboard',
-    eyebrow: 'Overview',
-    title: 'Dashboard',
-    description:
-      'Track team activity, project health, and operational priorities from one place.',
-  },
+const placeholderPages = [
   {
     path: '/projects',
     eyebrow: 'Projects',
@@ -45,7 +39,7 @@ const pages = [
 ]
 
 function getPageTitle(pathname: string) {
-  return pages.find((page) => page.path === pathname)?.title ?? 'Dashboard'
+  return navigationItems.find((item) => item.path === pathname)?.label ?? 'Dashboard'
 }
 
 function App() {
@@ -85,7 +79,8 @@ function App() {
         <main className={styles.mainContent}>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            {pages.map((page) => (
+            <Route path="/dashboard" element={<DashboardPage />} />
+            {placeholderPages.map((page) => (
               <Route
                 key={page.path}
                 path={page.path}
