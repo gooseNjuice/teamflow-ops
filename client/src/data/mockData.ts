@@ -24,18 +24,24 @@ export const projects: Project[] = [
     name: 'Client Portal Refresh',
     description: 'Improve the self-service experience for portfolio clients.',
     ownerId: 'user-1',
+    status: 'active',
+    updatedAt: '2026-05-19',
   },
   {
     id: 'project-2',
     name: 'Ops Reporting Hub',
     description: 'Centralize team reporting and weekly operational insights.',
     ownerId: 'user-3',
+    status: 'at-risk',
+    updatedAt: '2026-05-18',
   },
   {
     id: 'project-3',
     name: 'Workflow Automation',
     description: 'Reduce repetitive task handoffs across delivery teams.',
     ownerId: 'user-2',
+    status: 'planning',
+    updatedAt: '2026-05-16',
   },
 ]
 
@@ -95,4 +101,3 @@ export const tasks: Task[] = [
     updatedAt: '2026-05-16',
   },
 ]
-

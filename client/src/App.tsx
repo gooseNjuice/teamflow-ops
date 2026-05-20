@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import ProjectsPage from './pages/ProjectsPage'
 import styles from './App.module.css'
 
 const navigationItems = [
@@ -12,12 +13,6 @@ const navigationItems = [
 ]
 
 const placeholderPages = [
-  {
-    path: '/projects',
-    eyebrow: 'Projects',
-    title: 'Projects',
-    description: 'Project lists and planning views will live here in a future iteration.',
-  },
   {
     path: '/tasks',
     eyebrow: 'Tasks',
@@ -80,6 +75,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
             {placeholderPages.map((page) => (
               <Route
                 key={page.path}
