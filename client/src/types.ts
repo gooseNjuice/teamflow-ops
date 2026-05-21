@@ -1,5 +1,6 @@
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
 export type ProjectStatus = 'planning' | 'active' | 'at-risk'
+export type TaskPriority = 'low' | 'medium' | 'high'
 
 export type Project = {
   id: string
@@ -22,6 +23,7 @@ export type Task = {
   projectId: string
   assigneeId: string
   status: TaskStatus
+  priority: TaskPriority
   dueDate: string
   updatedAt: string
 }
