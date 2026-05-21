@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
+import TaskCard from '../components/TaskCard'
 import { projects, tasks, users } from '../data/mockData'
 import type { TaskPriority, TaskStatus } from '../types'
 import styles from './TasksPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
+  backlog: 'Backlog',
   todo: 'To do',
   'in-progress': 'In progress',
+  'in-review': 'In review',
   done: 'Done',
 }
 
@@ -14,6 +17,14 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   medium: 'Medium',
   high: 'High',
 }
+
+const kanbanColumns: { status: TaskStatus; title: string }[] = [
+  { status: 'backlog', title: 'Backlog' },
+  { status: 'todo', title: 'Todo' },
+  { status: 'in-progress', title: 'In Progress' },
+  { status: 'in-review', title: 'In Review' },
+  { status: 'done', title: 'Done' },
+]
 
 function getAssigneeName(assigneeId: string) {
   return users.find((user) => user.id === assigneeId)?.name ?? 'Unassigned'
@@ -156,9 +167,46 @@ function TasksPage() {
           <p>Try changing the search query or clearing one of the filters.</p>
         </section>
       )}
+
+      <section className={styles.boardSection} aria-label="Kanban board">
+        <div className={styles.sectionHeader}>
+          <div>
+            <p className={styles.eyebrow}>Board</p>
+            <h3>Kanban view</h3>
+          </div>
+          <span>{tasks.length} total tasks</span>
+        </div>
+
+        <div className={styles.boardScroller}>
+          <div className={styles.kanbanBoard}>
+            {kanbanColumns.map((column) => {
+              const columnTasks = tasks.filter((task) => task.status === column.status)
+
+              return (
+                <section key={column.status} className={styles.kanbanColumn}>
+                  <header className={styles.columnHeader}>
+                    <h4>{column.title}</h4>
+                    <span>{columnTasks.length}</span>
+                  </header>
+
+                  <div className={styles.columnTasks}>
+                    {columnTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        assigneeName={getAssigneeName(task.assigneeId)}
+                        projectName={getProjectName(task.projectId)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
 
 export default TasksPage
-
