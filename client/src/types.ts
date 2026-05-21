@@ -1,4 +1,4 @@
-export type TaskStatus = 'todo' | 'in-progress' | 'done'
+export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'in-review' | 'done'
 export type ProjectStatus = 'planning' | 'active' | 'at-risk'
 export type TaskPriority = 'low' | 'medium' | 'high'
 
