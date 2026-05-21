@@ -1,11 +1,25 @@
 .card {
   display: grid;
   gap: 1rem;
+  width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 0.875rem;
   background: #fff;
   padding: 1rem;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.08);
+}
+
+.card:focus-visible {
+  border-color: #4f46e5;
+  outline: 3px solid #e0e7ff;
 }
 
 .cardHeader {

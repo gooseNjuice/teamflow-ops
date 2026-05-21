@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import TaskCard from '../components/TaskCard'
+import TaskDetailsModal from '../components/TaskDetailsModal'
 import { projects, tasks, users } from '../data/mockData'
-import type { TaskPriority, TaskStatus } from '../types'
+import type { Task, TaskPriority, TaskStatus } from '../types'
 import styles from './TasksPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
@@ -46,6 +47,7 @@ function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -146,7 +148,12 @@ function TasksPage() {
 
           <div className={styles.tableBody}>
             {filteredTasks.map((task) => (
-              <article key={task.id} className={styles.taskRow}>
+              <button
+                key={task.id}
+                className={styles.taskRow}
+                type="button"
+                onClick={() => setSelectedTask(task)}
+              >
                 <strong>{task.title}</strong>
                 <span className={`${styles.pill} ${styles[task.status]}`}>
                   {taskStatusLabels[task.status]}
@@ -157,7 +164,7 @@ function TasksPage() {
                 <span>{getAssigneeName(task.assigneeId)}</span>
                 <span>{getProjectName(task.projectId)}</span>
                 <span>{formatDate(task.dueDate)}</span>
-              </article>
+              </button>
             ))}
           </div>
         </section>
@@ -196,6 +203,7 @@ function TasksPage() {
                         task={task}
                         assigneeName={getAssigneeName(task.assigneeId)}
                         projectName={getProjectName(task.projectId)}
+                        onClick={() => setSelectedTask(task)}
                       />
                     ))}
                   </div>
@@ -205,6 +213,15 @@ function TasksPage() {
           </div>
         </div>
       </section>
+
+      {selectedTask ? (
+        <TaskDetailsModal
+          task={selectedTask}
+          assigneeName={getAssigneeName(selectedTask.assigneeId)}
+          projectName={getProjectName(selectedTask.projectId)}
+          onClose={() => setSelectedTask(null)}
+        />
+      ) : null}
     </div>
   )
 }
