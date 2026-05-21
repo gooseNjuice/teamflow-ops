@@ -7,8 +7,10 @@ import styles from './TasksPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
   backlog: 'Backlog',
+  backlog: 'Backlog',
   todo: 'To do',
   'in-progress': 'In progress',
+  'in-review': 'In review',
   'in-review': 'In review',
   done: 'Done',
 }
@@ -18,6 +20,14 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   medium: 'Medium',
   high: 'High',
 }
+
+const kanbanColumns: { status: TaskStatus; title: string }[] = [
+  { status: 'backlog', title: 'Backlog' },
+  { status: 'todo', title: 'Todo' },
+  { status: 'in-progress', title: 'In Progress' },
+  { status: 'in-review', title: 'In Review' },
+  { status: 'done', title: 'Done' },
+]
 
 const kanbanColumns: { status: TaskStatus; title: string }[] = [
   { status: 'backlog', title: 'Backlog' },
