@@ -3,8 +3,10 @@ import type { Task, TaskStatus } from '../types'
 import styles from './DashboardPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
+  backlog: 'Backlog',
   todo: 'To do',
   'in-progress': 'In progress',
+  'in-review': 'In review',
   done: 'Done',
 }
 
@@ -138,4 +140,3 @@ function DashboardPage() {
 }
 
 export default DashboardPage
-
