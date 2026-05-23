@@ -5,7 +5,7 @@
 - [x] App shell layout
 - [ ] Mock projects page
 - [x] Mock tasks list page
-- [ ] Mock kanban board
+- [x] Mock kanban board
 - [ ] Task details modal
 - [ ] Express + TypeScript server
 - [ ] MongoDB models
