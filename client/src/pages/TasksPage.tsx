@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 import TaskCard from '../components/TaskCard'
+import TaskDetailsModal from '../components/TaskDetailsModal'
 import { projects, tasks, users } from '../data/mockData'
 import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
 import styles from './TasksPage.module.css'
@@ -50,6 +51,7 @@ function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -66,6 +68,16 @@ function TasksPage() {
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee
     })
   }, [assigneeFilter, priorityFilter, searchQuery, statusFilter])
+
+  function handleTaskRowKeyDown(
+    event: KeyboardEvent<HTMLTableRowElement>,
+    task: Task,
+  ) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      setSelectedTask(task)
+    }
+  }
 
   return (
     <div className={styles.tasksPage}>
@@ -163,7 +175,14 @@ function TasksPage() {
               </thead>
               <tbody>
                 {filteredTasks.map((task) => (
-                  <tr key={task.id}>
+                  <tr
+                    key={task.id}
+                    className={styles.clickableRow}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedTask(task)}
+                    onKeyDown={(event) => handleTaskRowKeyDown(event, task)}
+                  >
                     <td>
                       <strong>{task.title}</strong>
                     </td>
@@ -221,6 +240,7 @@ function TasksPage() {
                         task={task}
                         assigneeName={getAssigneeName(task, users)}
                         projectName={getProjectName(task, projects)}
+                        onClick={() => setSelectedTask(task)}
                       />
                     ))}
                   </div>
@@ -230,6 +250,15 @@ function TasksPage() {
           </div>
         </div>
       </section>
+
+      {selectedTask ? (
+        <TaskDetailsModal
+          task={selectedTask}
+          assigneeName={getAssigneeName(selectedTask, users)}
+          projectName={getProjectName(selectedTask, projects)}
+          onClose={() => setSelectedTask(null)}
+        />
+      ) : null}
     </div>
   )
 }

@@ -6,7 +6,7 @@
 - [ ] Mock projects page
 - [x] Mock tasks list page
 - [x] Mock kanban board
-- [ ] Task details modal
+- [x] Task details modal
 - [ ] Express + TypeScript server
 - [ ] MongoDB models
 - [ ] Tasks API
