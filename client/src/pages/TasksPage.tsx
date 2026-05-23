@@ -1,16 +1,12 @@
 import { useMemo, useState } from 'react'
-import TaskCard from '../components/TaskCard'
-import TaskDetailsModal from '../components/TaskDetailsModal'
 import { projects, tasks, users } from '../data/mockData'
-import type { Task, TaskPriority, TaskStatus } from '../types'
+import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
 import styles from './TasksPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
   backlog: 'Backlog',
-  backlog: 'Backlog',
   todo: 'To do',
   'in-progress': 'In progress',
-  'in-review': 'In review',
   'in-review': 'In review',
   done: 'Done',
 }
@@ -21,34 +17,22 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   high: 'High',
 }
 
-const kanbanColumns: { status: TaskStatus; title: string }[] = [
-  { status: 'backlog', title: 'Backlog' },
-  { status: 'todo', title: 'Todo' },
-  { status: 'in-progress', title: 'In Progress' },
-  { status: 'in-review', title: 'In Review' },
-  { status: 'done', title: 'Done' },
-]
-
-const kanbanColumns: { status: TaskStatus; title: string }[] = [
-  { status: 'backlog', title: 'Backlog' },
-  { status: 'todo', title: 'Todo' },
-  { status: 'in-progress', title: 'In Progress' },
-  { status: 'in-review', title: 'In Review' },
-  { status: 'done', title: 'Done' },
-]
-
-function getAssigneeName(assigneeId: string) {
-  return users.find((user) => user.id === assigneeId)?.name ?? 'Unassigned'
+function getAssigneeName(task: Task, availableUsers: User[]) {
+  return availableUsers.find((user) => user.id === task.assigneeId)?.name ?? 'Unassigned'
 }
 
-function getProjectName(projectId: string) {
-  return projects.find((project) => project.id === projectId)?.name ?? 'Unknown project'
+function getProjectName(task: Task, availableProjects: Project[]) {
+  return (
+    availableProjects.find((project) => project.id === task.projectId)?.name ??
+    'Unknown project'
+  )
 }
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
   }).format(new Date(`${date}T00:00:00`))
 }
 
@@ -57,7 +41,6 @@ function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -79,17 +62,17 @@ function TasksPage() {
     <div className={styles.tasksPage}>
       <section className={styles.hero}>
         <p className={styles.eyebrow}>Tasks</p>
-        <h2>Task workspace</h2>
+        <h2>Task list</h2>
         <p>
-          Filter mock tasks by ownership, status, priority, and title before real task
-          workflows are connected.
+          Review current mock tasks by status, priority, owner, project, and due date.
         </p>
       </section>
 
       <section className={styles.filters} aria-label="Task filters">
-        <label>
-          Search
+        <label htmlFor="task-search">
+          Search tasks
           <input
+            id="task-search"
             type="search"
             placeholder="Search by task title"
             value={searchQuery}
@@ -97,9 +80,10 @@ function TasksPage() {
           />
         </label>
 
-        <label>
+        <label htmlFor="task-status">
           Status
           <select
+            id="task-status"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as TaskStatus | 'all')}
           >
@@ -112,9 +96,10 @@ function TasksPage() {
           </select>
         </label>
 
-        <label>
+        <label htmlFor="task-priority">
           Priority
           <select
+            id="task-priority"
             value={priorityFilter}
             onChange={(event) =>
               setPriorityFilter(event.target.value as TaskPriority | 'all')
@@ -129,9 +114,10 @@ function TasksPage() {
           </select>
         </label>
 
-        <label>
+        <label htmlFor="task-assignee">
           Assignee
           <select
+            id="task-assignee"
             value={assigneeFilter}
             onChange={(event) => setAssigneeFilter(event.target.value)}
           >
@@ -147,35 +133,48 @@ function TasksPage() {
 
       {filteredTasks.length > 0 ? (
         <section className={styles.tableCard} aria-label="Tasks list">
-          <div className={styles.tableHeader}>
-            <span>Task</span>
-            <span>Status</span>
-            <span>Priority</span>
-            <span>Assignee</span>
-            <span>Project</span>
-            <span>Due date</span>
+          <div className={styles.tableSummary}>
+            <h3>Tasks</h3>
+            <span>
+              {filteredTasks.length} of {tasks.length} shown
+            </span>
           </div>
 
-          <div className={styles.tableBody}>
-            {filteredTasks.map((task) => (
-              <button
-                key={task.id}
-                className={styles.taskRow}
-                type="button"
-                onClick={() => setSelectedTask(task)}
-              >
-                <strong>{task.title}</strong>
-                <span className={`${styles.pill} ${styles[task.status]}`}>
-                  {taskStatusLabels[task.status]}
-                </span>
-                <span className={`${styles.pill} ${styles[task.priority]}`}>
-                  {taskPriorityLabels[task.priority]}
-                </span>
-                <span>{getAssigneeName(task.assigneeId)}</span>
-                <span>{getProjectName(task.projectId)}</span>
-                <span>{formatDate(task.dueDate)}</span>
-              </button>
-            ))}
+          <div className={styles.tableScroller}>
+            <table className={styles.tasksTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Priority</th>
+                  <th scope="col">Assignee</th>
+                  <th scope="col">Project</th>
+                  <th scope="col">Due date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((task) => (
+                  <tr key={task.id}>
+                    <td>
+                      <strong>{task.title}</strong>
+                    </td>
+                    <td>
+                      <span className={`${styles.pill} ${styles[task.status]}`}>
+                        {taskStatusLabels[task.status]}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`${styles.pill} ${styles[task.priority]}`}>
+                        {taskPriorityLabels[task.priority]}
+                      </span>
+                    </td>
+                    <td>{getAssigneeName(task, users)}</td>
+                    <td>{getProjectName(task, projects)}</td>
+                    <td>{formatDate(task.dueDate)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       ) : (
@@ -184,54 +183,6 @@ function TasksPage() {
           <p>Try changing the search query or clearing one of the filters.</p>
         </section>
       )}
-
-      <section className={styles.boardSection} aria-label="Kanban board">
-        <div className={styles.sectionHeader}>
-          <div>
-            <p className={styles.eyebrow}>Board</p>
-            <h3>Kanban view</h3>
-          </div>
-          <span>{tasks.length} total tasks</span>
-        </div>
-
-        <div className={styles.boardScroller}>
-          <div className={styles.kanbanBoard}>
-            {kanbanColumns.map((column) => {
-              const columnTasks = tasks.filter((task) => task.status === column.status)
-
-              return (
-                <section key={column.status} className={styles.kanbanColumn}>
-                  <header className={styles.columnHeader}>
-                    <h4>{column.title}</h4>
-                    <span>{columnTasks.length}</span>
-                  </header>
-
-                  <div className={styles.columnTasks}>
-                    {columnTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        assigneeName={getAssigneeName(task.assigneeId)}
-                        projectName={getProjectName(task.projectId)}
-                        onClick={() => setSelectedTask(task)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {selectedTask ? (
-        <TaskDetailsModal
-          task={selectedTask}
-          assigneeName={getAssigneeName(selectedTask.assigneeId)}
-          projectName={getProjectName(selectedTask.projectId)}
-          onClose={() => setSelectedTask(null)}
-        />
-      ) : null}
     </div>
   )
 }
