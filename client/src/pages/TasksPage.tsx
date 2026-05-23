@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import TaskCard from '../components/TaskCard'
 import { projects, tasks, users } from '../data/mockData'
 import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
 import styles from './TasksPage.module.css'
@@ -16,6 +17,14 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   medium: 'Medium',
   high: 'High',
 }
+
+const kanbanColumns: { status: TaskStatus; title: string }[] = [
+  { status: 'backlog', title: 'Backlog' },
+  { status: 'todo', title: 'Todo' },
+  { status: 'in-progress', title: 'In Progress' },
+  { status: 'in-review', title: 'In Review' },
+  { status: 'done', title: 'Done' },
+]
 
 function getAssigneeName(task: Task, availableUsers: User[]) {
   return availableUsers.find((user) => user.id === task.assigneeId)?.name ?? 'Unassigned'
@@ -183,6 +192,44 @@ function TasksPage() {
           <p>Try changing the search query or clearing one of the filters.</p>
         </section>
       )}
+
+      <section className={styles.boardSection} aria-label="Kanban board">
+        <div className={styles.sectionHeader}>
+          <div>
+            <p className={styles.eyebrow}>Board</p>
+            <h3>Kanban board</h3>
+          </div>
+          <span>{tasks.length} total tasks</span>
+        </div>
+
+        <div className={styles.boardScroller}>
+          <div className={styles.kanbanBoard}>
+            {kanbanColumns.map((column) => {
+              const columnTasks = tasks.filter((task) => task.status === column.status)
+
+              return (
+                <section key={column.status} className={styles.kanbanColumn}>
+                  <header className={styles.columnHeader}>
+                    <h4>{column.title}</h4>
+                    <span>{columnTasks.length}</span>
+                  </header>
+
+                  <div className={styles.columnTasks}>
+                    {columnTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        assigneeName={getAssigneeName(task, users)}
+                        projectName={getProjectName(task, projects)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
