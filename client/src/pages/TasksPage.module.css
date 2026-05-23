@@ -6,7 +6,6 @@
 .hero,
 .filters,
 .tableCard,
-.boardSection,
 .emptyState {
   border: 1px solid #e5e7eb;
   border-radius: 1rem;
@@ -73,16 +72,43 @@
   overflow: hidden;
 }
 
-.tableHeader,
-.taskRow {
-  display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) repeat(5, minmax(120px, 1fr));
-  gap: 1rem;
+.tableSummary {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 1rem 1.25rem;
 }
 
-.tableHeader {
+.tableSummary h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.tableSummary span {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.tableScroller {
+  overflow-x: auto;
+}
+
+.tasksTable {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+}
+
+.tasksTable th,
+.tasksTable td {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #f3f4f6;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tasksTable th {
   background: #f9fafb;
   color: #6b7280;
   font-size: 0.75rem;
@@ -90,22 +116,18 @@
   text-transform: uppercase;
 }
 
-.tableBody {
-  display: grid;
-}
-
-.taskRow {
-  border-top: 1px solid #f3f4f6;
+.tasksTable td {
   color: #4b5563;
   font-size: 0.9rem;
 }
 
-.taskRow strong {
+.tasksTable strong {
   color: #111827;
 }
 
 .pill {
-  justify-self: start;
+  display: inline-flex;
+  align-items: center;
   border-radius: 999px;
   padding: 0.25rem 0.6rem;
   white-space: nowrap;
@@ -159,96 +181,19 @@
   color: #6b7280;
 }
 
-.boardSection {
-  display: grid;
-  gap: 1rem;
-  padding: 1.25rem;
-}
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.sectionHeader h3 {
-  margin: 0.25rem 0 0;
-  font-size: 1rem;
-}
-
-.sectionHeader span {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.boardScroller {
-  overflow-x: auto;
-  padding-bottom: 0.25rem;
-}
-
-.kanbanBoard {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(240px, 1fr));
-  gap: 1rem;
-  min-width: 1240px;
-}
-
-.kanbanColumn {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 0.75rem;
-  border-radius: 0.875rem;
-  background: #f9fafb;
-  padding: 0.75rem;
-}
-
-.columnHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.columnHeader h4 {
-  margin: 0;
-  color: #111827;
-  font-size: 0.9rem;
-}
-
-.columnHeader span {
-  border-radius: 999px;
-  background: #e5e7eb;
-  padding: 0.2rem 0.55rem;
-  color: #374151;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.columnTasks {
-  display: grid;
-  align-content: start;
-  gap: 0.75rem;
-  min-height: 120px;
-}
-
 @media (max-width: 1100px) {
   .filters {
     grid-template-columns: 1fr 1fr;
   }
-
-  .tableCard {
-    overflow-x: auto;
-  }
-
-  .tableHeader,
-  .taskRow {
-    min-width: 920px;
-  }
 }
 
 @media (max-width: 720px) {
-  .filters {
+  .filters,
+  .tableSummary {
     grid-template-columns: 1fr;
+  }
+
+  .tableSummary {
+    display: grid;
   }
 }

@@ -20,10 +20,12 @@ export type User = {
 export type Task = {
   id: string
   title: string
+  description: string
   projectId: string
   assigneeId: string
   status: TaskStatus
   priority: TaskPriority
   dueDate: string
+  createdAt: string
   updatedAt: string
 }
