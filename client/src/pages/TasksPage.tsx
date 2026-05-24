@@ -1,4 +1,15 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
 import { projects, tasks as mockTasks, users } from '../data/mockData'
@@ -27,6 +38,10 @@ const kanbanColumns: { status: TaskStatus; title: string }[] = [
   { status: 'done', title: 'Done' },
 ]
 
+const statusColumnIds = new Set<TaskStatus>(
+  kanbanColumns.map((column) => column.status),
+)
+
 function getAssigneeName(task: Task, availableUsers: User[]) {
   return availableUsers.find((user) => user.id === task.assigneeId)?.name ?? 'Unassigned'
 }
@@ -46,6 +61,76 @@ function formatDate(date: string) {
   }).format(new Date(`${date}T00:00:00`))
 }
 
+function isTaskStatus(value: unknown): value is TaskStatus {
+  return typeof value === 'string' && statusColumnIds.has(value as TaskStatus)
+}
+
+type DraggableTaskCardProps = {
+  task: Task
+  assigneeName: string
+  projectName: string
+  onClick: () => void
+}
+
+function DraggableTaskCard({
+  task,
+  assigneeName,
+  projectName,
+  onClick,
+}: DraggableTaskCardProps) {
+  const { attributes, isDragging, listeners, setNodeRef, transform } = useDraggable({
+    id: task.id,
+    data: {
+      taskId: task.id,
+      status: task.status,
+    },
+  })
+  const dragStyle = transform
+    ? {
+        transform: `translate3d(${Math.round(transform.x)}px, ${Math.round(
+          transform.y,
+        )}px, 0)`,
+      }
+    : undefined
+
+  return (
+    <TaskCard
+      ref={setNodeRef}
+      style={dragStyle}
+      task={task}
+      assigneeName={assigneeName}
+      projectName={projectName}
+      isDragging={isDragging}
+      onClick={onClick}
+      {...listeners}
+      {...attributes}
+    />
+  )
+}
+
+type KanbanColumnProps = {
+  children: ReactNode
+  status: TaskStatus
+}
+
+function KanbanColumn({ children, status }: KanbanColumnProps) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: status,
+    data: {
+      status,
+    },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${styles.columnTasks} ${isOver ? styles.columnTasksOver : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
 function TasksPage() {
   const [taskItems, setTaskItems] = useState<Task[]>(() =>
     mockTasks.map((task) => ({ ...task })),
@@ -55,6 +140,13 @@ function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  )
+  const activeTask = activeTaskId
+    ? taskItems.find((task) => task.id === activeTaskId) ?? null
+    : null
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -81,6 +173,21 @@ function TasksPage() {
     setSelectedTask((currentTask) =>
       currentTask?.id === taskId ? { ...currentTask, status: nextStatus } : currentTask,
     )
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveTaskId(String(event.active.id))
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const taskId = String(event.active.id)
+    const nextStatus = event.over?.data.current?.status
+
+    if (isTaskStatus(nextStatus)) {
+      updateTaskStatus(taskId, nextStatus)
+    }
+
+    setActiveTaskId(null)
   }
 
   function handleTaskRowKeyDown(
@@ -226,46 +333,64 @@ function TasksPage() {
         </section>
       )}
 
-      <section className={styles.boardSection} aria-label="Kanban board">
-        <div className={styles.sectionHeader}>
-          <div>
-            <p className={styles.eyebrow}>Board</p>
-            <h3>Kanban board</h3>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragCancel={() => setActiveTaskId(null)}
+        onDragEnd={handleDragEnd}
+      >
+        <section className={styles.boardSection} aria-label="Kanban board">
+          <div className={styles.sectionHeader}>
+            <div>
+              <p className={styles.eyebrow}>Board</p>
+              <h3>Kanban board</h3>
+            </div>
+            <span>{taskItems.length} total tasks</span>
           </div>
-          <span>{taskItems.length} total tasks</span>
-        </div>
 
-        <div className={styles.boardScroller}>
-          <div className={styles.kanbanBoard}>
-            {kanbanColumns.map((column) => {
-              const columnTasks = taskItems.filter(
-                (task) => task.status === column.status,
-              )
+          <div className={styles.boardScroller}>
+            <div className={styles.kanbanBoard}>
+              {kanbanColumns.map((column) => {
+                const columnTasks = taskItems.filter(
+                  (task) => task.status === column.status,
+                )
 
-              return (
-                <section key={column.status} className={styles.kanbanColumn}>
-                  <header className={styles.columnHeader}>
-                    <h4>{column.title}</h4>
-                    <span>{columnTasks.length}</span>
-                  </header>
+                return (
+                  <section key={column.status} className={styles.kanbanColumn}>
+                    <header className={styles.columnHeader}>
+                      <h4>{column.title}</h4>
+                      <span>{columnTasks.length}</span>
+                    </header>
 
-                  <div className={styles.columnTasks}>
-                    {columnTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        assigneeName={getAssigneeName(task, users)}
-                        projectName={getProjectName(task, projects)}
-                        onClick={() => setSelectedTask(task)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )
-            })}
+                    <KanbanColumn status={column.status}>
+                      {columnTasks.map((task) => (
+                        <DraggableTaskCard
+                          key={task.id}
+                          task={task}
+                          assigneeName={getAssigneeName(task, users)}
+                          projectName={getProjectName(task, projects)}
+                          onClick={() => setSelectedTask(task)}
+                        />
+                      ))}
+                    </KanbanColumn>
+                  </section>
+                )
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <DragOverlay>
+          {activeTask ? (
+            <TaskCard
+              task={activeTask}
+              assigneeName={getAssigneeName(activeTask, users)}
+              projectName={getProjectName(activeTask, projects)}
+              onClick={() => undefined}
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {selectedTask ? (
         <TaskDetailsModal
