@@ -1,7 +1,7 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
-import { projects, tasks, users } from '../data/mockData'
+import { projects, tasks as mockTasks, users } from '../data/mockData'
 import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
 import styles from './TasksPage.module.css'
 
@@ -47,6 +47,9 @@ function formatDate(date: string) {
 }
 
 function TasksPage() {
+  const [taskItems, setTaskItems] = useState<Task[]>(() =>
+    mockTasks.map((task) => ({ ...task })),
+  )
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
@@ -56,7 +59,7 @@ function TasksPage() {
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
 
-    return tasks.filter((task) => {
+    return taskItems.filter((task) => {
       const matchesSearch =
         !normalizedQuery || task.title.toLowerCase().includes(normalizedQuery)
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter
@@ -67,7 +70,18 @@ function TasksPage() {
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee
     })
-  }, [assigneeFilter, priorityFilter, searchQuery, statusFilter])
+  }, [assigneeFilter, priorityFilter, searchQuery, statusFilter, taskItems])
+
+  function updateTaskStatus(taskId: string, nextStatus: TaskStatus) {
+    setTaskItems((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === taskId ? { ...task, status: nextStatus } : task,
+      ),
+    )
+    setSelectedTask((currentTask) =>
+      currentTask?.id === taskId ? { ...currentTask, status: nextStatus } : currentTask,
+    )
+  }
 
   function handleTaskRowKeyDown(
     event: KeyboardEvent<HTMLTableRowElement>,
@@ -157,7 +171,7 @@ function TasksPage() {
           <div className={styles.tableSummary}>
             <h3>Tasks</h3>
             <span>
-              {filteredTasks.length} of {tasks.length} shown
+              {filteredTasks.length} of {taskItems.length} shown
             </span>
           </div>
 
@@ -218,13 +232,15 @@ function TasksPage() {
             <p className={styles.eyebrow}>Board</p>
             <h3>Kanban board</h3>
           </div>
-          <span>{tasks.length} total tasks</span>
+          <span>{taskItems.length} total tasks</span>
         </div>
 
         <div className={styles.boardScroller}>
           <div className={styles.kanbanBoard}>
             {kanbanColumns.map((column) => {
-              const columnTasks = tasks.filter((task) => task.status === column.status)
+              const columnTasks = taskItems.filter(
+                (task) => task.status === column.status,
+              )
 
               return (
                 <section key={column.status} className={styles.kanbanColumn}>
