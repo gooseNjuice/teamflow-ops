@@ -5,6 +5,7 @@ type TaskCardProps = {
   task: Task
   assigneeName: string
   projectName: string
+  onClick: () => void
 }
 
 const taskPriorityLabels = {
@@ -20,9 +21,9 @@ function formatDate(date: string) {
   }).format(new Date(`${date}T00:00:00`))
 }
 
-function TaskCard({ task, assigneeName, projectName }: TaskCardProps) {
+function TaskCard({ task, assigneeName, projectName, onClick }: TaskCardProps) {
   return (
-    <article className={styles.card}>
+    <button className={styles.card} type="button" onClick={onClick}>
       <div className={styles.cardHeader}>
         <h4>{task.title}</h4>
         <span className={`${styles.priorityPill} ${styles[task.priority]}`}>
@@ -44,7 +45,7 @@ function TaskCard({ task, assigneeName, projectName }: TaskCardProps) {
           <dd>{formatDate(task.dueDate)}</dd>
         </div>
       </dl>
-    </article>
+    </button>
   )
 }
 

@@ -126,6 +126,16 @@
   color: #111827;
 }
 
+.clickableRow:hover {
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.clickableRow:focus-visible {
+  outline: 3px solid #e0e7ff;
+  outline-offset: -3px;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
