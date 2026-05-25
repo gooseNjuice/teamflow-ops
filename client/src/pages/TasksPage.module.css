@@ -4,6 +4,7 @@
 }
 
 .hero,
+.formSection,
 .filters,
 .tableCard,
 .boardSection,
@@ -27,6 +28,12 @@
 .hero p {
   margin: 0;
   color: #4b5563;
+}
+
+.formSection {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
 }
 
 .eyebrow {

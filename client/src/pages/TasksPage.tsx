@@ -12,6 +12,7 @@ import {
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
+import TaskForm from '../components/TaskForm'
 import { projects, tasks as mockTasks, users } from '../data/mockData'
 import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
 import styles from './TasksPage.module.css'
@@ -244,6 +245,16 @@ function TasksPage() {
         <p>
           Review current mock tasks by status, priority, owner, project, and due date.
         </p>
+      </section>
+
+      <section className={styles.formSection} aria-labelledby="task-form-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <p className={styles.eyebrow}>Draft</p>
+            <h3 id="task-form-heading">Task form</h3>
+          </div>
+        </div>
+        <TaskForm assignees={users} projects={projects} />
       </section>
 
       <section className={styles.filters} aria-label="Task filters">
