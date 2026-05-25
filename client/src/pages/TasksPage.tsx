@@ -42,6 +42,14 @@ const statusColumnIds = new Set<TaskStatus>(
   kanbanColumns.map((column) => column.status),
 )
 
+type TaskActivityItem = {
+  id: string
+  taskTitle: string
+  previousStatus: TaskStatus
+  nextStatus: TaskStatus
+  createdAt: number
+}
+
 function getAssigneeName(task: Task, availableUsers: User[]) {
   return availableUsers.find((user) => user.id === task.assigneeId)?.name ?? 'Unassigned'
 }
@@ -59,6 +67,13 @@ function formatDate(date: string) {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(`${date}T00:00:00`))
+}
+
+function formatActivityTime(timestamp: number) {
+  return new Intl.DateTimeFormat('en', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(timestamp))
 }
 
 function isTaskStatus(value: unknown): value is TaskStatus {
@@ -141,6 +156,7 @@ function TasksPage() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
@@ -165,6 +181,14 @@ function TasksPage() {
   }, [assigneeFilter, priorityFilter, searchQuery, statusFilter, taskItems])
 
   function updateTaskStatus(taskId: string, nextStatus: TaskStatus) {
+    const currentTask = taskItems.find((task) => task.id === taskId)
+
+    if (!currentTask || currentTask.status === nextStatus) {
+      return
+    }
+
+    const activityCreatedAt = Date.now()
+
     setTaskItems((currentTasks) =>
       currentTasks.map((task) =>
         task.id === taskId ? { ...task, status: nextStatus } : task,
@@ -172,6 +196,18 @@ function TasksPage() {
     )
     setSelectedTask((currentTask) =>
       currentTask?.id === taskId ? { ...currentTask, status: nextStatus } : currentTask,
+    )
+    setRecentActivity((currentActivity) =>
+      [
+        {
+          id: `${taskId}-${activityCreatedAt}`,
+          taskTitle: currentTask.title,
+          previousStatus: currentTask.status,
+          nextStatus,
+          createdAt: activityCreatedAt,
+        },
+        ...currentActivity,
+      ].slice(0, 5),
     )
   }
 
@@ -347,6 +383,31 @@ function TasksPage() {
             </div>
             <span>{taskItems.length} total tasks</span>
           </div>
+
+          {recentActivity.length > 0 ? (
+            <section className={styles.activityPanel} aria-label="Recent task activity">
+              <div className={styles.activityHeader}>
+                <h4>Recent activity</h4>
+                <span>Latest {recentActivity.length}</span>
+              </div>
+              <ul className={styles.activityList}>
+                {recentActivity.map((activity) => (
+                  <li key={activity.id} className={styles.activityItem}>
+                    <div>
+                      <strong>{activity.taskTitle}</strong>
+                      <span>
+                        {taskStatusLabels[activity.previousStatus]} to{' '}
+                        {taskStatusLabels[activity.nextStatus]}
+                      </span>
+                    </div>
+                    <time dateTime={new Date(activity.createdAt).toISOString()}>
+                      {formatActivityTime(activity.createdAt)}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <div className={styles.boardScroller}>
             <div className={styles.kanbanBoard}>
