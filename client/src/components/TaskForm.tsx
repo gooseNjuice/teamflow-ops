@@ -85,6 +85,7 @@ type TaskFormProps = {
   projects: Project[]
   initialTask?: Task
   onSubmit?: (values: TaskFormValues) => void
+  submitLabel?: string
 }
 
 function getDefaultValues(initialTask?: Task): TaskFormFieldValues {
@@ -99,7 +100,13 @@ function getDefaultValues(initialTask?: Task): TaskFormFieldValues {
   }
 }
 
-function TaskForm({ assignees, projects, initialTask, onSubmit }: TaskFormProps) {
+function TaskForm({
+  assignees,
+  projects,
+  initialTask,
+  onSubmit,
+  submitLabel = 'Validate task',
+}: TaskFormProps) {
   const {
     formState: { errors },
     handleSubmit,
@@ -232,7 +239,7 @@ function TaskForm({ assignees, projects, initialTask, onSubmit }: TaskFormProps)
       </div>
 
       <div className={styles.actions}>
-        <button type="submit">Validate task</button>
+        <button type="submit">{submitLabel}</button>
       </div>
     </form>
   )

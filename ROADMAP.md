@@ -10,6 +10,7 @@
 - [x] Drag-and-drop task status updates
 - [x] Lightweight task status activity feedback
 - [x] Validated reusable task form
+- [x] Local task creation flow
 - [ ] Express + TypeScript server
 - [ ] MongoDB models
 - [ ] Tasks API
