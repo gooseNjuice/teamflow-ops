@@ -45,10 +45,13 @@ const statusColumnIds = new Set<TaskStatus>(
 
 type TaskActivityItem = {
   id: string
+  description: string
   taskTitle: string
-  previousStatus: TaskStatus
-  nextStatus: TaskStatus
   createdAt: number
+}
+
+type LocalTask = Task & {
+  isArchived?: boolean
 }
 
 function getAssigneeName(task: Task, availableUsers: User[]) {
@@ -156,7 +159,7 @@ function KanbanColumn({ children, status }: KanbanColumnProps) {
 }
 
 function TasksPage() {
-  const [taskItems, setTaskItems] = useState<Task[]>(() =>
+  const [taskItems, setTaskItems] = useState<LocalTask[]>(() =>
     mockTasks.map((task) => ({ ...task })),
   )
   const [searchQuery, setSearchQuery] = useState('')
@@ -172,13 +175,21 @@ function TasksPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
   const activeTask = activeTaskId
-    ? taskItems.find((task) => task.id === activeTaskId) ?? null
+    ? taskItems.find((task) => task.id === activeTaskId && !task.isArchived) ?? null
     : null
+  const activeTasks = useMemo(
+    () => taskItems.filter((task) => !task.isArchived),
+    [taskItems],
+  )
+  const archivedTasks = useMemo(
+    () => taskItems.filter((task) => task.isArchived),
+    [taskItems],
+  )
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
 
-    return taskItems.filter((task) => {
+    return activeTasks.filter((task) => {
       const matchesSearch =
         !normalizedQuery || task.title.toLowerCase().includes(normalizedQuery)
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter
@@ -189,10 +200,10 @@ function TasksPage() {
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee
     })
-  }, [assigneeFilter, priorityFilter, searchQuery, statusFilter, taskItems])
+  }, [activeTasks, assigneeFilter, priorityFilter, searchQuery, statusFilter])
 
   function updateTaskStatus(taskId: string, nextStatus: TaskStatus) {
-    const currentTask = taskItems.find((task) => task.id === taskId)
+    const currentTask = activeTasks.find((task) => task.id === taskId)
 
     if (!currentTask || currentTask.status === nextStatus) {
       return
@@ -212,9 +223,8 @@ function TasksPage() {
       [
         {
           id: `${taskId}-${activityCreatedAt}`,
+          description: `${taskStatusLabels[currentTask.status]} to ${taskStatusLabels[nextStatus]}`,
           taskTitle: currentTask.title,
-          previousStatus: currentTask.status,
-          nextStatus,
           createdAt: activityCreatedAt,
         },
         ...currentActivity,
@@ -224,7 +234,7 @@ function TasksPage() {
 
   function handleCreateTask(values: TaskFormValues) {
     const currentDate = getDateInputValue(new Date())
-    const newTask: Task = {
+    const newTask: LocalTask = {
       id: `task-${Date.now()}`,
       title: values.title,
       description: values.description,
@@ -265,6 +275,50 @@ function TasksPage() {
       currentTask?.id === updatedTask.id ? updatedTask : currentTask,
     )
     setEditingTask(null)
+  }
+
+  function addRecentActivity(task: Task, description: string) {
+    const activityCreatedAt = Date.now()
+
+    setRecentActivity((currentActivity) =>
+      [
+        {
+          id: `${task.id}-${activityCreatedAt}`,
+          description,
+          taskTitle: task.title,
+          createdAt: activityCreatedAt,
+        },
+        ...currentActivity,
+      ].slice(0, 5),
+    )
+  }
+
+  function handleArchiveTask(task: Task) {
+    const updatedAt = getDateInputValue(new Date())
+
+    setTaskItems((currentTasks) =>
+      currentTasks.map((currentTask) =>
+        currentTask.id === task.id
+          ? { ...currentTask, isArchived: true, updatedAt }
+          : currentTask,
+      ),
+    )
+    setSelectedTask(null)
+    setEditingTask(null)
+    addRecentActivity(task, 'Archived')
+  }
+
+  function handleRestoreTask(task: Task) {
+    const updatedAt = getDateInputValue(new Date())
+
+    setTaskItems((currentTasks) =>
+      currentTasks.map((currentTask) =>
+        currentTask.id === task.id
+          ? { ...currentTask, isArchived: false, updatedAt }
+          : currentTask,
+      ),
+    )
+    addRecentActivity(task, 'Restored')
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -382,7 +436,7 @@ function TasksPage() {
           <div className={styles.tableSummary}>
             <h3>Tasks</h3>
             <span>
-              {filteredTasks.length} of {taskItems.length} shown
+              {filteredTasks.length} of {activeTasks.length} shown
             </span>
           </div>
 
@@ -449,7 +503,7 @@ function TasksPage() {
               <p className={styles.eyebrow}>Board</p>
               <h3>Kanban board</h3>
             </div>
-            <span>{taskItems.length} total tasks</span>
+            <span>{activeTasks.length} active tasks</span>
           </div>
 
           {recentActivity.length > 0 ? (
@@ -464,8 +518,7 @@ function TasksPage() {
                     <div>
                       <strong>{activity.taskTitle}</strong>
                       <span>
-                        {taskStatusLabels[activity.previousStatus]} to{' '}
-                        {taskStatusLabels[activity.nextStatus]}
+                        {activity.description}
                       </span>
                     </div>
                     <time dateTime={new Date(activity.createdAt).toISOString()}>
@@ -480,7 +533,7 @@ function TasksPage() {
           <div className={styles.boardScroller}>
             <div className={styles.kanbanBoard}>
               {kanbanColumns.map((column) => {
-                const columnTasks = taskItems.filter(
+                const columnTasks = activeTasks.filter(
                   (task) => task.status === column.status,
                 )
 
@@ -521,12 +574,43 @@ function TasksPage() {
         </DragOverlay>
       </DndContext>
 
+      <section className={styles.archivedSection} aria-labelledby="archived-tasks-title">
+        <div className={styles.sectionHeader}>
+          <div>
+            <p className={styles.eyebrow}>Archive</p>
+            <h3 id="archived-tasks-title">Archived tasks</h3>
+          </div>
+          <span>{archivedTasks.length} archived</span>
+        </div>
+
+        {archivedTasks.length > 0 ? (
+          <ul className={styles.archivedList}>
+            {archivedTasks.map((task) => (
+              <li key={task.id} className={styles.archivedItem}>
+                <div>
+                  <strong>{task.title}</strong>
+                  <span>
+                    {getProjectName(task, projects)} - {getAssigneeName(task, users)}
+                  </span>
+                </div>
+                <button type="button" onClick={() => handleRestoreTask(task)}>
+                  Restore
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.archivedEmpty}>No archived tasks yet.</p>
+        )}
+      </section>
+
       {selectedTask && !editingTask ? (
         <TaskDetailsModal
           task={selectedTask}
           assigneeName={getAssigneeName(selectedTask, users)}
           projectName={getProjectName(selectedTask, projects)}
           onClose={() => setSelectedTask(null)}
+          onArchive={() => handleArchiveTask(selectedTask)}
           onEdit={() => setEditingTask(selectedTask)}
         />
       ) : null}
