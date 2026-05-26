@@ -41,20 +41,38 @@
   text-transform: uppercase;
 }
 
-.closeButton {
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.closeButton,
+.editButton {
   border: 0;
   border-radius: 999px;
-  background: #111827;
   padding: 0.55rem 0.9rem;
-  color: #fff;
   cursor: pointer;
   font: inherit;
   font-size: 0.875rem;
   font-weight: 700;
 }
 
+.closeButton {
+  background: #111827;
+  color: #fff;
+}
+
 .closeButton:hover {
   background: #1f2937;
+}
+
+.editButton {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.editButton:hover {
+  background: #e0e7ff;
 }
 
 .description {
@@ -132,6 +150,14 @@
 @media (max-width: 640px) {
   .header {
     flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions button {
+    flex: 1;
   }
 
   .detailsGrid {

@@ -165,6 +165,7 @@ function TasksPage() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
   const sensors = useSensors(
@@ -238,6 +239,32 @@ function TasksPage() {
 
     setTaskItems((currentTasks) => [newTask, ...currentTasks])
     setIsCreateTaskOpen(false)
+  }
+
+  function handleEditTask(values: TaskFormValues) {
+    if (!editingTask) {
+      return
+    }
+
+    const updatedTask: Task = {
+      ...editingTask,
+      title: values.title,
+      description: values.description,
+      projectId: values.projectId,
+      assigneeId: values.assigneeId,
+      status: values.status,
+      priority: values.priority,
+      dueDate: values.dueDate,
+      updatedAt: getDateInputValue(new Date()),
+    }
+
+    setTaskItems((currentTasks) =>
+      currentTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
+    )
+    setSelectedTask((currentTask) =>
+      currentTask?.id === updatedTask.id ? updatedTask : currentTask,
+    )
+    setEditingTask(null)
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -494,12 +521,13 @@ function TasksPage() {
         </DragOverlay>
       </DndContext>
 
-      {selectedTask ? (
+      {selectedTask && !editingTask ? (
         <TaskDetailsModal
           task={selectedTask}
           assigneeName={getAssigneeName(selectedTask, users)}
           projectName={getProjectName(selectedTask, projects)}
           onClose={() => setSelectedTask(null)}
+          onEdit={() => setEditingTask(selectedTask)}
         />
       ) : null}
 
@@ -534,6 +562,44 @@ function TasksPage() {
               projects={projects}
               submitLabel="Create task"
               onSubmit={handleCreateTask}
+            />
+          </section>
+        </div>
+      ) : null}
+
+      {editingTask ? (
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={() => setEditingTask(null)}
+        >
+          <section
+            aria-labelledby="edit-task-title"
+            aria-modal="true"
+            className={styles.createTaskModal}
+            role="dialog"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>Edit task</p>
+                <h2 id="edit-task-title">Update task</h2>
+              </div>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                onClick={() => setEditingTask(null)}
+              >
+                Close
+              </button>
+            </header>
+            <TaskForm
+              key={editingTask.id}
+              assignees={users}
+              projects={projects}
+              initialTask={editingTask}
+              submitLabel="Save task"
+              onSubmit={handleEditTask}
             />
           </section>
         </div>
