@@ -11,6 +11,7 @@
 - [x] Lightweight task status activity feedback
 - [x] Validated reusable task form
 - [x] Local task creation flow
+- [x] Local task editing flow
 - [ ] Express + TypeScript server
 - [ ] MongoDB models
 - [ ] Tasks API

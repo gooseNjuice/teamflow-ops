@@ -7,6 +7,7 @@ type TaskDetailsModalProps = {
   assigneeName: string
   projectName: string
   onClose: () => void
+  onEdit: () => void
 }
 
 const taskStatusLabels: Record<TaskStatus, string> = {
@@ -40,6 +41,7 @@ function TaskDetailsModal({
   assigneeName,
   projectName,
   onClose,
+  onEdit,
 }: TaskDetailsModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -66,9 +68,14 @@ function TaskDetailsModal({
             <p className={styles.eyebrow}>Task details</p>
             <h2 id="task-details-title">{task.title}</h2>
           </div>
-          <button className={styles.closeButton} type="button" onClick={onClose}>
-            Close
-          </button>
+          <div className={styles.actions}>
+            <button className={styles.editButton} type="button" onClick={onEdit}>
+              Edit
+            </button>
+            <button className={styles.closeButton} type="button" onClick={onClose}>
+              Close
+            </button>
+          </div>
         </header>
 
         <p className={styles.description}>{task.description}</p>
