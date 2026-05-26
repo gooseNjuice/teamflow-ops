@@ -47,6 +47,7 @@
 }
 
 .closeButton,
+.archiveButton,
 .editButton {
   border: 0;
   border-radius: 999px;
@@ -73,6 +74,15 @@
 
 .editButton:hover {
   background: #e0e7ff;
+}
+
+.archiveButton {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.archiveButton:hover {
+  background: #fde68a;
 }
 
 .description {

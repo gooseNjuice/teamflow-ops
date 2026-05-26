@@ -12,6 +12,7 @@
 - [x] Validated reusable task form
 - [x] Local task creation flow
 - [x] Local task editing flow
+- [x] Local task archiving flow
 - [ ] Express + TypeScript server
 - [ ] MongoDB models
 - [ ] Tasks API

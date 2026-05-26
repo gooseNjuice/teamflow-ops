@@ -7,6 +7,7 @@ type TaskDetailsModalProps = {
   assigneeName: string
   projectName: string
   onClose: () => void
+  onArchive: () => void
   onEdit: () => void
 }
 
@@ -41,6 +42,7 @@ function TaskDetailsModal({
   assigneeName,
   projectName,
   onClose,
+  onArchive,
   onEdit,
 }: TaskDetailsModalProps) {
   useEffect(() => {
@@ -71,6 +73,9 @@ function TaskDetailsModal({
           <div className={styles.actions}>
             <button className={styles.editButton} type="button" onClick={onEdit}>
               Edit
+            </button>
+            <button className={styles.archiveButton} type="button" onClick={onArchive}>
+              Archive
             </button>
             <button className={styles.closeButton} type="button" onClick={onClose}>
               Close
