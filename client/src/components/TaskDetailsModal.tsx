@@ -23,7 +23,11 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   high: 'High',
 }
 
-function formatDate(date: string) {
+function formatDate(date: string, fallback = 'No date') {
+  if (!date) {
+    return fallback
+  }
+
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
@@ -96,7 +100,7 @@ function TaskDetailsModal({
           </div>
           <div>
             <dt>Due date</dt>
-            <dd>{formatDate(task.dueDate)}</dd>
+            <dd>{formatDate(task.dueDate, 'No due date')}</dd>
           </div>
           <div>
             <dt>Created</dt>
@@ -113,4 +117,3 @@ function TaskDetailsModal({
 }
 
 export default TaskDetailsModal
-

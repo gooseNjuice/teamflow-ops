@@ -16,6 +16,10 @@ const taskPriorityLabels = {
 } as const
 
 function formatDate(date: string) {
+  if (!date) {
+    return 'No due date'
+  }
+
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',

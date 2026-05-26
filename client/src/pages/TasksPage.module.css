@@ -4,7 +4,6 @@
 }
 
 .hero,
-.formSection,
 .filters,
 .tableCard,
 .boardSection,
@@ -16,8 +15,14 @@
 }
 
 .hero {
-  max-width: 760px;
   padding: 1.5rem;
+}
+
+.heroContent {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .hero h2 {
@@ -30,18 +35,41 @@
   color: #4b5563;
 }
 
-.formSection {
-  display: grid;
-  gap: 1rem;
-  padding: 1.25rem;
-}
-
 .eyebrow {
+  margin: 0;
   color: #4f46e5;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.primaryButton {
+  background: #111827;
+  padding: 0.7rem 1rem;
+  color: #fff;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover {
+  background: #1f2937;
+}
+
+.secondaryButton {
+  background: #111827;
+  padding: 0.55rem 0.9rem;
+  color: #fff;
 }
 
 .filters {
@@ -354,6 +382,40 @@
   outline-offset: 0.35rem;
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(17 24 39 / 0.55);
+  padding: 1rem;
+}
+
+.createTaskModal {
+  width: min(760px, 100%);
+  max-height: min(820px, calc(100vh - 2rem));
+  overflow-y: auto;
+  border-radius: 1.25rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 24px 80px rgb(15 23 42 / 0.28);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modalHeader h2 {
+  margin: 0.35rem 0 0;
+  color: #111827;
+  font-size: 1.35rem;
+}
+
 @media (max-width: 1100px) {
   .filters {
     grid-template-columns: 1fr 1fr;
@@ -366,8 +428,13 @@
     grid-template-columns: 1fr;
   }
 
+  .heroContent,
   .tableSummary {
     display: grid;
+  }
+
+  .modalHeader {
+    flex-direction: column;
   }
 
   .activityItem {

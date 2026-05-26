@@ -12,7 +12,7 @@ import {
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
-import TaskForm from '../components/TaskForm'
+import TaskForm, { type TaskFormValues } from '../components/TaskForm'
 import { projects, tasks as mockTasks, users } from '../data/mockData'
 import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
 import styles from './TasksPage.module.css'
@@ -62,7 +62,11 @@ function getProjectName(task: Task, availableProjects: Project[]) {
   )
 }
 
-function formatDate(date: string) {
+function formatDate(date: string, fallback = 'No date') {
+  if (!date) {
+    return fallback
+  }
+
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
@@ -75,6 +79,10 @@ function formatActivityTime(timestamp: number) {
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(timestamp))
+}
+
+function getDateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10)
 }
 
 function isTaskStatus(value: unknown): value is TaskStatus {
@@ -156,6 +164,7 @@ function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
   const sensors = useSensors(
@@ -212,6 +221,25 @@ function TasksPage() {
     )
   }
 
+  function handleCreateTask(values: TaskFormValues) {
+    const currentDate = getDateInputValue(new Date())
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: values.title,
+      description: values.description,
+      projectId: values.projectId,
+      assigneeId: values.assigneeId,
+      status: values.status,
+      priority: values.priority,
+      dueDate: values.dueDate,
+      createdAt: currentDate,
+      updatedAt: currentDate,
+    }
+
+    setTaskItems((currentTasks) => [newTask, ...currentTasks])
+    setIsCreateTaskOpen(false)
+  }
+
   function handleDragStart(event: DragStartEvent) {
     setActiveTaskId(String(event.active.id))
   }
@@ -240,21 +268,23 @@ function TasksPage() {
   return (
     <div className={styles.tasksPage}>
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>Tasks</p>
-        <h2>Task list</h2>
-        <p>
-          Review current mock tasks by status, priority, owner, project, and due date.
-        </p>
-      </section>
-
-      <section className={styles.formSection} aria-labelledby="task-form-heading">
-        <div className={styles.sectionHeader}>
+        <div className={styles.heroContent}>
           <div>
-            <p className={styles.eyebrow}>Draft</p>
-            <h3 id="task-form-heading">Task form</h3>
+            <p className={styles.eyebrow}>Tasks</p>
+            <h2>Task list</h2>
+            <p>
+              Review current mock tasks by status, priority, owner, project, and due
+              date.
+            </p>
           </div>
+          <button
+            className={styles.primaryButton}
+            type="button"
+            onClick={() => setIsCreateTaskOpen(true)}
+          >
+            New Task
+          </button>
         </div>
-        <TaskForm assignees={users} projects={projects} />
       </section>
 
       <section className={styles.filters} aria-label="Task filters">
@@ -366,7 +396,7 @@ function TasksPage() {
                     </td>
                     <td>{getAssigneeName(task, users)}</td>
                     <td>{getProjectName(task, projects)}</td>
-                    <td>{formatDate(task.dueDate)}</td>
+                    <td>{formatDate(task.dueDate, 'No due date')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -471,6 +501,42 @@ function TasksPage() {
           projectName={getProjectName(selectedTask, projects)}
           onClose={() => setSelectedTask(null)}
         />
+      ) : null}
+
+      {isCreateTaskOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={() => setIsCreateTaskOpen(false)}
+        >
+          <section
+            aria-labelledby="create-task-title"
+            aria-modal="true"
+            className={styles.createTaskModal}
+            role="dialog"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>New task</p>
+                <h2 id="create-task-title">Create task</h2>
+              </div>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                onClick={() => setIsCreateTaskOpen(false)}
+              >
+                Close
+              </button>
+            </header>
+            <TaskForm
+              assignees={users}
+              projects={projects}
+              submitLabel="Create task"
+              onSubmit={handleCreateTask}
+            />
+          </section>
+        </div>
       ) : null}
     </div>
   )
