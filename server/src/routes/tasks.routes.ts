@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { tasks } from '../data/tasks.data';
-import { createTaskSchema } from '../schemas/task.schemas';
-import { Task } from '../types/task.types';
+import { tasks } from '../data/tasks.data.ts';
+import { createTaskSchema, updateTaskSchema } from '../schemas/task.schemas.ts';
+import type { Task } from '../types/task.types.ts';
 
 export const tasksRouter = Router();
 
@@ -49,4 +49,27 @@ tasksRouter.post('/', (req, res) => {
   tasks.push(newTask);
 
   return res.status(201).json(newTask);
+});
+
+tasksRouter.patch('/:id', (req, res) => {
+  const task = tasks.find((item) => item.id === req.params.id);
+
+  if (!task) {
+    return res.status(404).json({ message: 'Task not found' });
+  }
+
+  const result = updateTaskSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json({
+      message: 'Invalid task data',
+      errors: result.error.flatten().fieldErrors,
+    });
+  }
+
+  Object.assign(task, result.data, {
+    updatedAt: new Date().toISOString(),
+  });
+
+  return res.json(task);
 });

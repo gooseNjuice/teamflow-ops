@@ -10,7 +10,7 @@ export interface Task {
   priority: TaskPriority;
   assigneeId: string;
   projectId: string;
-  dueDate?: string;
+  dueDate?: string | undefined;
   createdAt: string;
   updatedAt: string;
   archived: boolean;
