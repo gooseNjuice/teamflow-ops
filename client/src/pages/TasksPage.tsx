@@ -9,7 +9,13 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
 import TaskForm, { type TaskFormValues } from '../components/TaskForm'
@@ -42,6 +48,8 @@ const kanbanColumns: { status: TaskStatus; title: string }[] = [
 const statusColumnIds = new Set<TaskStatus>(
   kanbanColumns.map((column) => column.status),
 )
+const demoTasksStorageKey = 'teamflow-ops:tasks'
+const demoActivityStorageKey = 'teamflow-ops:recent-activity'
 
 type TaskActivityItem = {
   id: string
@@ -52,6 +60,42 @@ type TaskActivityItem = {
 
 type LocalTask = Task & {
   isArchived?: boolean
+}
+
+function getInitialTasks(): LocalTask[] {
+  try {
+    const storedTasks = localStorage.getItem(demoTasksStorageKey)
+
+    if (storedTasks) {
+      const parsedTasks = JSON.parse(storedTasks)
+
+      if (Array.isArray(parsedTasks)) {
+        return parsedTasks
+      }
+    }
+  } catch {
+    return mockTasks.map((task) => ({ ...task }))
+  }
+
+  return mockTasks.map((task) => ({ ...task }))
+}
+
+function getInitialRecentActivity(): TaskActivityItem[] {
+  try {
+    const storedActivity = localStorage.getItem(demoActivityStorageKey)
+
+    if (storedActivity) {
+      const parsedActivity = JSON.parse(storedActivity)
+
+      if (Array.isArray(parsedActivity)) {
+        return parsedActivity
+      }
+    }
+  } catch {
+    return []
+  }
+
+  return []
 }
 
 function getAssigneeName(task: Task, availableUsers: User[]) {
@@ -159,9 +203,7 @@ function KanbanColumn({ children, status }: KanbanColumnProps) {
 }
 
 function TasksPage() {
-  const [taskItems, setTaskItems] = useState<LocalTask[]>(() =>
-    mockTasks.map((task) => ({ ...task })),
-  )
+  const [taskItems, setTaskItems] = useState<LocalTask[]>(getInitialTasks)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
@@ -170,7 +212,8 @@ function TasksPage() {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
-  const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
+  const [recentActivity, setRecentActivity] =
+    useState<TaskActivityItem[]>(getInitialRecentActivity)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
@@ -185,6 +228,22 @@ function TasksPage() {
     () => taskItems.filter((task) => task.isArchived),
     [taskItems],
   )
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(demoTasksStorageKey, JSON.stringify(taskItems))
+    } catch {
+      // Ignore storage write failures so the demo still works in memory.
+    }
+  }, [taskItems])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(demoActivityStorageKey, JSON.stringify(recentActivity))
+    } catch {
+      // Ignore storage write failures so the demo still works in memory.
+    }
+  }, [recentActivity])
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -321,6 +380,15 @@ function TasksPage() {
     addRecentActivity(task, 'Restored')
   }
 
+  function handleResetDemoData() {
+    setTaskItems(mockTasks.map((task) => ({ ...task })))
+    setRecentActivity([])
+    setSelectedTask(null)
+    setEditingTask(null)
+    setIsCreateTaskOpen(false)
+    setActiveTaskId(null)
+  }
+
   function handleDragStart(event: DragStartEvent) {
     setActiveTaskId(String(event.active.id))
   }
@@ -358,13 +426,22 @@ function TasksPage() {
               date.
             </p>
           </div>
-          <button
-            className={styles.primaryButton}
-            type="button"
-            onClick={() => setIsCreateTaskOpen(true)}
-          >
-            New Task
-          </button>
+          <div className={styles.heroActions}>
+            <button
+              className={styles.secondaryActionButton}
+              type="button"
+              onClick={handleResetDemoData}
+            >
+              Reset demo data
+            </button>
+            <button
+              className={styles.primaryButton}
+              type="button"
+              onClick={() => setIsCreateTaskOpen(true)}
+            >
+              New Task
+            </button>
+          </div>
         </div>
       </section>
 
