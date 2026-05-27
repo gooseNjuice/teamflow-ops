@@ -13,6 +13,7 @@
 - [x] Local task creation flow
 - [x] Local task editing flow
 - [x] Local task archiving flow
+- [x] Persisted demo workspace state
 - [ ] Express + TypeScript server
 - [ ] MongoDB models
 - [ ] Tasks API
