@@ -19,3 +19,10 @@ export const createTaskSchema = z.object({
   projectId: z.string().min(1, 'Project is required'),
   dueDate: z.string().optional(),
 });
+
+export const updateTaskSchema = createTaskSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  {
+    message: 'At least one field must be provided',
+  }
+);

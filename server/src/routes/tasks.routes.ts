@@ -1,13 +1,24 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { tasks } from '../data/tasks.data';
-import { createTaskSchema } from '../schemas/task.schemas';
-import { Task } from '../types/task.types';
+import { tasks } from '../data/tasks.data.ts';
+import { createTaskSchema, updateTaskSchema } from '../schemas/task.schemas.ts';
+import type { Task } from '../types/task.types.ts';
 
 export const tasksRouter = Router();
 
-tasksRouter.get('/', (_req, res) => {
-  res.json(tasks);
+tasksRouter.get('/', (req, res) => {
+  const includeArchived = req.query.includeArchived === 'true';
+  const onlyArchived = req.query.archived === 'true';
+
+  if (includeArchived) {
+    return res.json(tasks);
+  }
+
+  if (onlyArchived) {
+    return res.json(tasks.filter((task) => task.archived));
+  }
+
+  return res.json(tasks.filter((task) => !task.archived));
 });
 
 tasksRouter.get('/:id', (req, res) => {
@@ -49,4 +60,53 @@ tasksRouter.post('/', (req, res) => {
   tasks.push(newTask);
 
   return res.status(201).json(newTask);
+});
+
+tasksRouter.patch('/:id', (req, res) => {
+  const task = tasks.find((item) => item.id === req.params.id);
+
+  if (!task) {
+    return res.status(404).json({ message: 'Task not found' });
+  }
+
+  const result = updateTaskSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json({
+      message: 'Invalid task data',
+      errors: result.error.flatten().fieldErrors,
+    });
+  }
+
+  Object.assign(task, result.data, {
+    updatedAt: new Date().toISOString(),
+  });
+
+  return res.json(task);
+});
+
+tasksRouter.patch('/:id/archive', (req, res) => {
+  const task = tasks.find((item) => item.id === req.params.id);
+
+  if (!task) {
+    return res.status(404).json({ message: 'Task not found' });
+  }
+
+  task.archived = true;
+  task.updatedAt = new Date().toISOString();
+
+  return res.json(task);
+});
+
+tasksRouter.patch('/:id/restore', (req, res) => {
+  const task = tasks.find((item) => item.id === req.params.id);
+
+  if (!task) {
+    return res.status(404).json({ message: 'Task not found' });
+  }
+
+  task.archived = false;
+  task.updatedAt = new Date().toISOString();
+
+  return res.json(task);
 });
