@@ -109,9 +109,14 @@
   color: #15803d;
 }
 
-.at-risk {
-  background: #fee2e2;
-  color: #b91c1c;
+.paused {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.completed {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .projectMeta {
