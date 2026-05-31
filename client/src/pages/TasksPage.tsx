@@ -1,26 +1,12 @@
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core'
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-} from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
-import TaskForm, { type TaskFormValues } from '../components/TaskForm'
-import { projects, tasks as mockTasks, users } from '../data/mockData'
-import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
+import { useGetProjectsQuery } from '../shared/api/projectsApi'
+import { useGetTasksQuery } from '../shared/api/tasksApi'
+import { useGetUsersQuery } from '../shared/api/usersApi'
+import type { Project } from '../shared/types/project'
+import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
+import type { User } from '../shared/types/user'
 import styles from './TasksPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
@@ -45,59 +31,6 @@ const kanbanColumns: { status: TaskStatus; title: string }[] = [
   { status: 'done', title: 'Done' },
 ]
 
-const statusColumnIds = new Set<TaskStatus>(
-  kanbanColumns.map((column) => column.status),
-)
-const demoTasksStorageKey = 'teamflow-ops:tasks'
-const demoActivityStorageKey = 'teamflow-ops:recent-activity'
-
-type TaskActivityItem = {
-  id: string
-  description: string
-  taskTitle: string
-  createdAt: number
-}
-
-type LocalTask = Task & {
-  isArchived?: boolean
-}
-
-function getInitialTasks(): LocalTask[] {
-  try {
-    const storedTasks = localStorage.getItem(demoTasksStorageKey)
-
-    if (storedTasks) {
-      const parsedTasks = JSON.parse(storedTasks)
-
-      if (Array.isArray(parsedTasks)) {
-        return parsedTasks
-      }
-    }
-  } catch {
-    return mockTasks.map((task) => ({ ...task }))
-  }
-
-  return mockTasks.map((task) => ({ ...task }))
-}
-
-function getInitialRecentActivity(): TaskActivityItem[] {
-  try {
-    const storedActivity = localStorage.getItem(demoActivityStorageKey)
-
-    if (storedActivity) {
-      const parsedActivity = JSON.parse(storedActivity)
-
-      if (Array.isArray(parsedActivity)) {
-        return parsedActivity
-      }
-    }
-  } catch {
-    return []
-  }
-
-  return []
-}
-
 function getAssigneeName(task: Task, availableUsers: User[]) {
   return availableUsers.find((user) => user.id === task.assigneeId)?.name ?? 'Unassigned'
 }
@@ -109,141 +42,44 @@ function getProjectName(task: Task, availableProjects: Project[]) {
   )
 }
 
-function formatDate(date: string, fallback = 'No date') {
+function formatDate(date: string | undefined, fallback = 'No date') {
   if (!date) {
     return fallback
   }
+
+  const dateValue = date.includes('T') ? date : `${date}T00:00:00`
 
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  }).format(new Date(`${date}T00:00:00`))
-}
-
-function formatActivityTime(timestamp: number) {
-  return new Intl.DateTimeFormat('en', {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(timestamp))
-}
-
-function getDateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10)
-}
-
-function isTaskStatus(value: unknown): value is TaskStatus {
-  return typeof value === 'string' && statusColumnIds.has(value as TaskStatus)
-}
-
-type DraggableTaskCardProps = {
-  task: Task
-  assigneeName: string
-  projectName: string
-  onClick: () => void
-}
-
-function DraggableTaskCard({
-  task,
-  assigneeName,
-  projectName,
-  onClick,
-}: DraggableTaskCardProps) {
-  const { attributes, isDragging, listeners, setNodeRef, transform } = useDraggable({
-    id: task.id,
-    data: {
-      taskId: task.id,
-      status: task.status,
-    },
-  })
-  const dragStyle = transform
-    ? {
-        transform: `translate3d(${Math.round(transform.x)}px, ${Math.round(
-          transform.y,
-        )}px, 0)`,
-      }
-    : undefined
-
-  return (
-    <TaskCard
-      ref={setNodeRef}
-      style={dragStyle}
-      task={task}
-      assigneeName={assigneeName}
-      projectName={projectName}
-      isDragging={isDragging}
-      onClick={onClick}
-      {...listeners}
-      {...attributes}
-    />
-  )
-}
-
-type KanbanColumnProps = {
-  children: ReactNode
-  status: TaskStatus
-}
-
-function KanbanColumn({ children, status }: KanbanColumnProps) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: status,
-    data: {
-      status,
-    },
-  })
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`${styles.columnTasks} ${isOver ? styles.columnTasksOver : ''}`}
-    >
-      {children}
-    </div>
-  )
+  }).format(new Date(dateValue))
 }
 
 function TasksPage() {
-  const [taskItems, setTaskItems] = useState<LocalTask[]>(getInitialTasks)
+  const {
+    data: tasks = [],
+    isError: isTasksError,
+    isLoading: isTasksLoading,
+  } = useGetTasksQuery()
+  const {
+    data: users = [],
+    isError: isUsersError,
+    isLoading: isUsersLoading,
+  } = useGetUsersQuery()
+  const {
+    data: projects = [],
+    isError: isProjectsError,
+    isLoading: isProjectsLoading,
+  } = useGetProjectsQuery()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
-  const [recentActivity, setRecentActivity] =
-    useState<TaskActivityItem[]>(getInitialRecentActivity)
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  )
-  const activeTask = activeTaskId
-    ? taskItems.find((task) => task.id === activeTaskId && !task.isArchived) ?? null
-    : null
-  const activeTasks = useMemo(
-    () => taskItems.filter((task) => !task.isArchived),
-    [taskItems],
-  )
-  const archivedTasks = useMemo(
-    () => taskItems.filter((task) => task.isArchived),
-    [taskItems],
-  )
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(demoTasksStorageKey, JSON.stringify(taskItems))
-    } catch {
-      // Ignore storage write failures so the demo still works in memory.
-    }
-  }, [taskItems])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(demoActivityStorageKey, JSON.stringify(recentActivity))
-    } catch {
-      // Ignore storage write failures so the demo still works in memory.
-    }
-  }, [recentActivity])
+  const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks])
+  const isLoading = isTasksLoading || isUsersLoading || isProjectsLoading
+  const isError = isTasksError || isUsersError || isProjectsError
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -260,149 +96,6 @@ function TasksPage() {
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee
     })
   }, [activeTasks, assigneeFilter, priorityFilter, searchQuery, statusFilter])
-
-  function updateTaskStatus(taskId: string, nextStatus: TaskStatus) {
-    const currentTask = activeTasks.find((task) => task.id === taskId)
-
-    if (!currentTask || currentTask.status === nextStatus) {
-      return
-    }
-
-    const activityCreatedAt = Date.now()
-
-    setTaskItems((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === taskId ? { ...task, status: nextStatus } : task,
-      ),
-    )
-    setSelectedTask((currentTask) =>
-      currentTask?.id === taskId ? { ...currentTask, status: nextStatus } : currentTask,
-    )
-    setRecentActivity((currentActivity) =>
-      [
-        {
-          id: `${taskId}-${activityCreatedAt}`,
-          description: `${taskStatusLabels[currentTask.status]} to ${taskStatusLabels[nextStatus]}`,
-          taskTitle: currentTask.title,
-          createdAt: activityCreatedAt,
-        },
-        ...currentActivity,
-      ].slice(0, 5),
-    )
-  }
-
-  function handleCreateTask(values: TaskFormValues) {
-    const currentDate = getDateInputValue(new Date())
-    const newTask: LocalTask = {
-      id: `task-${Date.now()}`,
-      title: values.title,
-      description: values.description,
-      projectId: values.projectId,
-      assigneeId: values.assigneeId,
-      status: values.status,
-      priority: values.priority,
-      dueDate: values.dueDate,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-    }
-
-    setTaskItems((currentTasks) => [newTask, ...currentTasks])
-    setIsCreateTaskOpen(false)
-  }
-
-  function handleEditTask(values: TaskFormValues) {
-    if (!editingTask) {
-      return
-    }
-
-    const updatedTask: Task = {
-      ...editingTask,
-      title: values.title,
-      description: values.description,
-      projectId: values.projectId,
-      assigneeId: values.assigneeId,
-      status: values.status,
-      priority: values.priority,
-      dueDate: values.dueDate,
-      updatedAt: getDateInputValue(new Date()),
-    }
-
-    setTaskItems((currentTasks) =>
-      currentTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
-    )
-    setSelectedTask((currentTask) =>
-      currentTask?.id === updatedTask.id ? updatedTask : currentTask,
-    )
-    setEditingTask(null)
-  }
-
-  function addRecentActivity(task: Task, description: string) {
-    const activityCreatedAt = Date.now()
-
-    setRecentActivity((currentActivity) =>
-      [
-        {
-          id: `${task.id}-${activityCreatedAt}`,
-          description,
-          taskTitle: task.title,
-          createdAt: activityCreatedAt,
-        },
-        ...currentActivity,
-      ].slice(0, 5),
-    )
-  }
-
-  function handleArchiveTask(task: Task) {
-    const updatedAt = getDateInputValue(new Date())
-
-    setTaskItems((currentTasks) =>
-      currentTasks.map((currentTask) =>
-        currentTask.id === task.id
-          ? { ...currentTask, isArchived: true, updatedAt }
-          : currentTask,
-      ),
-    )
-    setSelectedTask(null)
-    setEditingTask(null)
-    addRecentActivity(task, 'Archived')
-  }
-
-  function handleRestoreTask(task: Task) {
-    const updatedAt = getDateInputValue(new Date())
-
-    setTaskItems((currentTasks) =>
-      currentTasks.map((currentTask) =>
-        currentTask.id === task.id
-          ? { ...currentTask, isArchived: false, updatedAt }
-          : currentTask,
-      ),
-    )
-    addRecentActivity(task, 'Restored')
-  }
-
-  function handleResetDemoData() {
-    setTaskItems(mockTasks.map((task) => ({ ...task })))
-    setRecentActivity([])
-    setSelectedTask(null)
-    setEditingTask(null)
-    setIsCreateTaskOpen(false)
-    setActiveTaskId(null)
-  }
-
-  function handleDragStart(event: DragStartEvent) {
-    setActiveTaskId(String(event.active.id))
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const taskId = String(event.active.id)
-    const nextStatus = event.over?.data.current?.status
-
-    if (isTaskStatus(nextStatus)) {
-      updateTaskStatus(taskId, nextStatus)
-    }
-
-    setActiveTaskId(null)
-  }
 
   function handleTaskRowKeyDown(
     event: KeyboardEvent<HTMLTableRowElement>,
@@ -422,25 +115,8 @@ function TasksPage() {
             <p className={styles.eyebrow}>Tasks</p>
             <h2>Task list</h2>
             <p>
-              Review current mock tasks by status, priority, owner, project, and due
-              date.
+              Review API tasks by status, priority, owner, project, and due date.
             </p>
-          </div>
-          <div className={styles.heroActions}>
-            <button
-              className={styles.secondaryActionButton}
-              type="button"
-              onClick={handleResetDemoData}
-            >
-              Reset demo data
-            </button>
-            <button
-              className={styles.primaryButton}
-              type="button"
-              onClick={() => setIsCreateTaskOpen(true)}
-            >
-              New Task
-            </button>
           </div>
         </div>
       </section>
@@ -508,7 +184,21 @@ function TasksPage() {
         </label>
       </section>
 
-      {filteredTasks.length > 0 ? (
+      {isLoading ? (
+        <section className={styles.emptyState} aria-live="polite">
+          <h3>Loading tasks</h3>
+          <p>Fetching tasks, users, and projects from the API.</p>
+        </section>
+      ) : null}
+
+      {isError ? (
+        <section className={styles.emptyState} aria-live="polite">
+          <h3>Could not load tasks</h3>
+          <p>Check that the Express server is running and try again.</p>
+        </section>
+      ) : null}
+
+      {!isLoading && !isError && filteredTasks.length > 0 ? (
         <section className={styles.tableCard} aria-label="Tasks list">
           <div className={styles.tableSummary}>
             <h3>Tasks</h3>
@@ -561,19 +251,20 @@ function TasksPage() {
             </table>
           </div>
         </section>
-      ) : (
-        <section className={styles.emptyState}>
-          <h3>No tasks found</h3>
-          <p>Try changing the search query or clearing one of the filters.</p>
-        </section>
-      )}
+      ) : null}
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragCancel={() => setActiveTaskId(null)}
-        onDragEnd={handleDragEnd}
-      >
+      {!isLoading && !isError && filteredTasks.length === 0 ? (
+        <section className={styles.emptyState}>
+          <h3>{activeTasks.length === 0 ? 'No active tasks yet' : 'No tasks found'}</h3>
+          <p>
+            {activeTasks.length === 0
+              ? 'The API returned an empty active task list.'
+              : 'Try changing the search query or clearing one of the filters.'}
+          </p>
+        </section>
+      ) : null}
+
+      {!isLoading && !isError ? (
         <section className={styles.boardSection} aria-label="Kanban board">
           <div className={styles.sectionHeader}>
             <div>
@@ -582,30 +273,6 @@ function TasksPage() {
             </div>
             <span>{activeTasks.length} active tasks</span>
           </div>
-
-          {recentActivity.length > 0 ? (
-            <section className={styles.activityPanel} aria-label="Recent task activity">
-              <div className={styles.activityHeader}>
-                <h4>Recent activity</h4>
-                <span>Latest {recentActivity.length}</span>
-              </div>
-              <ul className={styles.activityList}>
-                {recentActivity.map((activity) => (
-                  <li key={activity.id} className={styles.activityItem}>
-                    <div>
-                      <strong>{activity.taskTitle}</strong>
-                      <span>
-                        {activity.description}
-                      </span>
-                    </div>
-                    <time dateTime={new Date(activity.createdAt).toISOString()}>
-                      {formatActivityTime(activity.createdAt)}
-                    </time>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
 
           <div className={styles.boardScroller}>
             <div className={styles.kanbanBoard}>
@@ -621,9 +288,9 @@ function TasksPage() {
                       <span>{columnTasks.length}</span>
                     </header>
 
-                    <KanbanColumn status={column.status}>
+                    <div className={styles.columnTasks}>
                       {columnTasks.map((task) => (
-                        <DraggableTaskCard
+                        <TaskCard
                           key={task.id}
                           task={task}
                           assigneeName={getAssigneeName(task, users)}
@@ -631,139 +298,23 @@ function TasksPage() {
                           onClick={() => setSelectedTask(task)}
                         />
                       ))}
-                    </KanbanColumn>
+                    </div>
                   </section>
                 )
               })}
             </div>
           </div>
+          {/* TODO: Re-enable drag-and-drop status updates after updateTask is wired. */}
         </section>
+      ) : null}
 
-        <DragOverlay>
-          {activeTask ? (
-            <TaskCard
-              task={activeTask}
-              assigneeName={getAssigneeName(activeTask, users)}
-              projectName={getProjectName(activeTask, projects)}
-              onClick={() => undefined}
-            />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-
-      <section className={styles.archivedSection} aria-labelledby="archived-tasks-title">
-        <div className={styles.sectionHeader}>
-          <div>
-            <p className={styles.eyebrow}>Archive</p>
-            <h3 id="archived-tasks-title">Archived tasks</h3>
-          </div>
-          <span>{archivedTasks.length} archived</span>
-        </div>
-
-        {archivedTasks.length > 0 ? (
-          <ul className={styles.archivedList}>
-            {archivedTasks.map((task) => (
-              <li key={task.id} className={styles.archivedItem}>
-                <div>
-                  <strong>{task.title}</strong>
-                  <span>
-                    {getProjectName(task, projects)} - {getAssigneeName(task, users)}
-                  </span>
-                </div>
-                <button type="button" onClick={() => handleRestoreTask(task)}>
-                  Restore
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className={styles.archivedEmpty}>No archived tasks yet.</p>
-        )}
-      </section>
-
-      {selectedTask && !editingTask ? (
+      {selectedTask ? (
         <TaskDetailsModal
           task={selectedTask}
           assigneeName={getAssigneeName(selectedTask, users)}
           projectName={getProjectName(selectedTask, projects)}
           onClose={() => setSelectedTask(null)}
-          onArchive={() => handleArchiveTask(selectedTask)}
-          onEdit={() => setEditingTask(selectedTask)}
         />
-      ) : null}
-
-      {isCreateTaskOpen ? (
-        <div
-          className={styles.modalBackdrop}
-          role="presentation"
-          onMouseDown={() => setIsCreateTaskOpen(false)}
-        >
-          <section
-            aria-labelledby="create-task-title"
-            aria-modal="true"
-            className={styles.createTaskModal}
-            role="dialog"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <header className={styles.modalHeader}>
-              <div>
-                <p className={styles.eyebrow}>New task</p>
-                <h2 id="create-task-title">Create task</h2>
-              </div>
-              <button
-                className={styles.secondaryButton}
-                type="button"
-                onClick={() => setIsCreateTaskOpen(false)}
-              >
-                Close
-              </button>
-            </header>
-            <TaskForm
-              assignees={users}
-              projects={projects}
-              submitLabel="Create task"
-              onSubmit={handleCreateTask}
-            />
-          </section>
-        </div>
-      ) : null}
-
-      {editingTask ? (
-        <div
-          className={styles.modalBackdrop}
-          role="presentation"
-          onMouseDown={() => setEditingTask(null)}
-        >
-          <section
-            aria-labelledby="edit-task-title"
-            aria-modal="true"
-            className={styles.createTaskModal}
-            role="dialog"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <header className={styles.modalHeader}>
-              <div>
-                <p className={styles.eyebrow}>Edit task</p>
-                <h2 id="edit-task-title">Update task</h2>
-              </div>
-              <button
-                className={styles.secondaryButton}
-                type="button"
-                onClick={() => setEditingTask(null)}
-              >
-                Close
-              </button>
-            </header>
-            <TaskForm
-              key={editingTask.id}
-              assignees={users}
-              projects={projects}
-              initialTask={editingTask}
-              submitLabel="Save task"
-              onSubmit={handleEditTask}
-            />
-          </section>
-        </div>
       ) : null}
     </div>
   )

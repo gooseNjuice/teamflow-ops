@@ -1,5 +1,5 @@
 import { forwardRef, type ComponentPropsWithoutRef } from 'react'
-import type { Task } from '../types'
+import type { Task } from '../shared/types/task'
 import styles from './TaskCard.module.css'
 
 type TaskCardProps = Omit<ComponentPropsWithoutRef<'button'>, 'className'> & {
@@ -15,15 +15,17 @@ const taskPriorityLabels = {
   high: 'High',
 } as const
 
-function formatDate(date: string) {
+function formatDate(date: string | undefined) {
   if (!date) {
     return 'No due date'
   }
 
+  const dateValue = date.includes('T') ? date : `${date}T00:00:00`
+
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
-  }).format(new Date(`${date}T00:00:00`))
+  }).format(new Date(dateValue))
 }
 
 const TaskCard = forwardRef<HTMLButtonElement, TaskCardProps>(function TaskCard(

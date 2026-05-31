@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import type { Task, TaskPriority, TaskStatus } from '../types'
+import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
 import styles from './TaskDetailsModal.module.css'
 
 type TaskDetailsModalProps = {
@@ -7,8 +7,8 @@ type TaskDetailsModalProps = {
   assigneeName: string
   projectName: string
   onClose: () => void
-  onArchive: () => void
-  onEdit: () => void
+  onArchive?: () => void
+  onEdit?: () => void
 }
 
 const taskStatusLabels: Record<TaskStatus, string> = {
@@ -25,16 +25,18 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   high: 'High',
 }
 
-function formatDate(date: string, fallback = 'No date') {
+function formatDate(date: string | undefined, fallback = 'No date') {
   if (!date) {
     return fallback
   }
+
+  const dateValue = date.includes('T') ? date : `${date}T00:00:00`
 
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  }).format(new Date(`${date}T00:00:00`))
+  }).format(new Date(dateValue))
 }
 
 function TaskDetailsModal({
@@ -71,12 +73,16 @@ function TaskDetailsModal({
             <h2 id="task-details-title">{task.title}</h2>
           </div>
           <div className={styles.actions}>
-            <button className={styles.editButton} type="button" onClick={onEdit}>
-              Edit
-            </button>
-            <button className={styles.archiveButton} type="button" onClick={onArchive}>
-              Archive
-            </button>
+            {onEdit ? (
+              <button className={styles.editButton} type="button" onClick={onEdit}>
+                Edit
+              </button>
+            ) : null}
+            {onArchive ? (
+              <button className={styles.archiveButton} type="button" onClick={onArchive}>
+                Archive
+              </button>
+            ) : null}
             <button className={styles.closeButton} type="button" onClick={onClose}>
               Close
             </button>
