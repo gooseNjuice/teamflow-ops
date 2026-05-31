@@ -15,3 +15,24 @@ export type Task = {
   updatedAt: string
   archived: boolean
 }
+
+export type CreateTaskRequest = {
+  title: string
+  description?: string
+  status?: TaskStatus
+  priority: TaskPriority
+  assigneeId: string
+  projectId: string
+  dueDate?: string
+}
+
+export type UpdateTaskRequest = {
+  id: string
+  title?: string
+  description?: string
+  status?: TaskStatus
+  priority?: TaskPriority
+  assigneeId?: string
+  projectId?: string
+  dueDate?: string
+}
