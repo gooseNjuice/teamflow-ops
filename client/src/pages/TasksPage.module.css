@@ -346,6 +346,13 @@
   flex: 0 0 auto;
 }
 
+.feedbackText {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
 .archivedList {
   display: grid;
   gap: 0.75rem;

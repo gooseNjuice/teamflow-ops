@@ -1,8 +1,19 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
 import { useGetProjectsQuery } from '../shared/api/projectsApi'
-import { useGetTasksQuery } from '../shared/api/tasksApi'
+import { useGetTasksQuery, useUpdateTaskMutation } from '../shared/api/tasksApi'
 import { useGetUsersQuery } from '../shared/api/usersApi'
 import type { Project } from '../shared/types/project'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
@@ -31,6 +42,17 @@ const kanbanColumns: { status: TaskStatus; title: string }[] = [
   { status: 'done', title: 'Done' },
 ]
 
+const statusColumnIds = new Set<TaskStatus>(
+  kanbanColumns.map((column) => column.status),
+)
+
+type TaskActivityItem = {
+  id: string
+  description: string
+  taskTitle: string
+  createdAt: number
+}
+
 function getAssigneeName(task: Task, availableUsers: User[]) {
   return availableUsers.find((user) => user.id === task.assigneeId)?.name ?? 'Unassigned'
 }
@@ -56,6 +78,83 @@ function formatDate(date: string | undefined, fallback = 'No date') {
   }).format(new Date(dateValue))
 }
 
+function formatActivityTime(timestamp: number) {
+  return new Intl.DateTimeFormat('en', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(timestamp))
+}
+
+function isTaskStatus(value: unknown): value is TaskStatus {
+  return typeof value === 'string' && statusColumnIds.has(value as TaskStatus)
+}
+
+type DraggableTaskCardProps = {
+  task: Task
+  assigneeName: string
+  projectName: string
+  onClick: () => void
+}
+
+function DraggableTaskCard({
+  task,
+  assigneeName,
+  projectName,
+  onClick,
+}: DraggableTaskCardProps) {
+  const { attributes, isDragging, listeners, setNodeRef, transform } = useDraggable({
+    id: task.id,
+    data: {
+      taskId: task.id,
+      status: task.status,
+    },
+  })
+  const dragStyle = transform
+    ? {
+        transform: `translate3d(${Math.round(transform.x)}px, ${Math.round(
+          transform.y,
+        )}px, 0)`,
+      }
+    : undefined
+
+  return (
+    <TaskCard
+      ref={setNodeRef}
+      style={dragStyle}
+      task={task}
+      assigneeName={assigneeName}
+      projectName={projectName}
+      isDragging={isDragging}
+      onClick={onClick}
+      {...listeners}
+      {...attributes}
+    />
+  )
+}
+
+type KanbanColumnProps = {
+  children: ReactNode
+  status: TaskStatus
+}
+
+function KanbanColumn({ children, status }: KanbanColumnProps) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: status,
+    data: {
+      status,
+    },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${styles.columnTasks} ${isOver ? styles.columnTasksOver : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
 function TasksPage() {
   const {
     data: tasks = [],
@@ -72,11 +171,21 @@ function TasksPage() {
     isError: isProjectsError,
     isLoading: isProjectsLoading,
   } = useGetProjectsQuery()
+  const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
+  const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  )
+  const activeTask = activeTaskId
+    ? tasks.find((task) => task.id === activeTaskId && !task.archived) ?? null
+    : null
   const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks])
   const isLoading = isTasksLoading || isUsersLoading || isProjectsLoading
   const isError = isTasksError || isUsersError || isProjectsError
@@ -104,6 +213,46 @@ function TasksPage() {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       setSelectedTask(task)
+    }
+  }
+
+  function addRecentActivity(task: Task, nextStatus: TaskStatus) {
+    const activityCreatedAt = Date.now()
+
+    setRecentActivity((currentActivity) =>
+      [
+        {
+          id: `${task.id}-${activityCreatedAt}`,
+          description: `${taskStatusLabels[task.status]} to ${taskStatusLabels[nextStatus]}`,
+          taskTitle: task.title,
+          createdAt: activityCreatedAt,
+        },
+        ...currentActivity,
+      ].slice(0, 5),
+    )
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setStatusUpdateError(null)
+    setActiveTaskId(String(event.active.id))
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const taskId = String(event.active.id)
+    const nextStatus = event.over?.data.current?.status
+    const currentTask = activeTasks.find((task) => task.id === taskId)
+
+    setActiveTaskId(null)
+
+    if (!currentTask || !isTaskStatus(nextStatus) || currentTask.status === nextStatus) {
+      return
+    }
+
+    try {
+      await updateTask({ id: taskId, status: nextStatus }).unwrap()
+      addRecentActivity(currentTask, nextStatus)
+    } catch {
+      setStatusUpdateError('Could not update task status. Please try again.')
     }
   }
 
@@ -265,47 +414,97 @@ function TasksPage() {
       ) : null}
 
       {!isLoading && !isError ? (
-        <section className={styles.boardSection} aria-label="Kanban board">
-          <div className={styles.sectionHeader}>
-            <div>
-              <p className={styles.eyebrow}>Board</p>
-              <h3>Kanban board</h3>
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragCancel={() => setActiveTaskId(null)}
+          onDragEnd={handleDragEnd}
+        >
+          <section className={styles.boardSection} aria-label="Kanban board">
+            <div className={styles.sectionHeader}>
+              <div>
+                <p className={styles.eyebrow}>Board</p>
+                <h3>Kanban board</h3>
+              </div>
+              <span>
+                {isUpdatingTask ? 'Updating status...' : `${activeTasks.length} active tasks`}
+              </span>
             </div>
-            <span>{activeTasks.length} active tasks</span>
-          </div>
 
-          <div className={styles.boardScroller}>
-            <div className={styles.kanbanBoard}>
-              {kanbanColumns.map((column) => {
-                const columnTasks = activeTasks.filter(
-                  (task) => task.status === column.status,
-                )
+            {statusUpdateError ? (
+              <section className={styles.activityPanel} aria-live="polite">
+                <div className={styles.activityHeader}>
+                  <h4>Status update failed</h4>
+                </div>
+                <p className={styles.feedbackText}>{statusUpdateError}</p>
+              </section>
+            ) : null}
 
-                return (
-                  <section key={column.status} className={styles.kanbanColumn}>
-                    <header className={styles.columnHeader}>
-                      <h4>{column.title}</h4>
-                      <span>{columnTasks.length}</span>
-                    </header>
+            {recentActivity.length > 0 ? (
+              <section className={styles.activityPanel} aria-label="Recent task activity">
+                <div className={styles.activityHeader}>
+                  <h4>Recent activity</h4>
+                  <span>Latest {recentActivity.length}</span>
+                </div>
+                <ul className={styles.activityList}>
+                  {recentActivity.map((activity) => (
+                    <li key={activity.id} className={styles.activityItem}>
+                      <div>
+                        <strong>{activity.taskTitle}</strong>
+                        <span>{activity.description}</span>
+                      </div>
+                      <time dateTime={new Date(activity.createdAt).toISOString()}>
+                        {formatActivityTime(activity.createdAt)}
+                      </time>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-                    <div className={styles.columnTasks}>
-                      {columnTasks.map((task) => (
-                        <TaskCard
-                          key={task.id}
-                          task={task}
-                          assigneeName={getAssigneeName(task, users)}
-                          projectName={getProjectName(task, projects)}
-                          onClick={() => setSelectedTask(task)}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                )
-              })}
+            <div className={styles.boardScroller}>
+              <div className={styles.kanbanBoard}>
+                {kanbanColumns.map((column) => {
+                  const columnTasks = activeTasks.filter(
+                    (task) => task.status === column.status,
+                  )
+
+                  return (
+                    <section key={column.status} className={styles.kanbanColumn}>
+                      <header className={styles.columnHeader}>
+                        <h4>{column.title}</h4>
+                        <span>{columnTasks.length}</span>
+                      </header>
+
+                      <KanbanColumn status={column.status}>
+                        {columnTasks.map((task) => (
+                          <DraggableTaskCard
+                            key={task.id}
+                            task={task}
+                            assigneeName={getAssigneeName(task, users)}
+                            projectName={getProjectName(task, projects)}
+                            onClick={() => setSelectedTask(task)}
+                          />
+                        ))}
+                      </KanbanColumn>
+                    </section>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-          {/* TODO: Re-enable drag-and-drop status updates after updateTask is wired. */}
-        </section>
+          </section>
+
+          <DragOverlay>
+            {activeTask ? (
+              <TaskCard
+                task={activeTask}
+                assigneeName={getAssigneeName(activeTask, users)}
+                projectName={getProjectName(activeTask, projects)}
+                onClick={() => undefined}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       ) : null}
 
       {selectedTask ? (
