@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import type { Project, Task, TaskPriority, TaskStatus, User } from '../types'
+import type { Project } from '../shared/types/project'
+import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
+import type { User } from '../shared/types/user'
 import styles from './TaskForm.module.css'
 
 const taskStatusOptions: TaskStatus[] = [
@@ -85,6 +87,7 @@ type TaskFormProps = {
   projects: Project[]
   initialTask?: Task
   onSubmit?: (values: TaskFormValues) => void
+  isSubmitting?: boolean
   submitLabel?: string
 }
 
@@ -104,6 +107,7 @@ function TaskForm({
   assignees,
   projects,
   initialTask,
+  isSubmitting = false,
   onSubmit,
   submitLabel = 'Validate task',
 }: TaskFormProps) {
@@ -239,7 +243,9 @@ function TaskForm({
       </div>
 
       <div className={styles.actions}>
-        <button type="submit">{submitLabel}</button>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : submitLabel}
+        </button>
       </div>
     </form>
   )

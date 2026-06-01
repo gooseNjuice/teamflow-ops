@@ -12,8 +12,13 @@ import {
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
+import TaskForm, { type TaskFormValues } from '../components/TaskForm'
 import { useGetProjectsQuery } from '../shared/api/projectsApi'
-import { useGetTasksQuery, useUpdateTaskMutation } from '../shared/api/tasksApi'
+import {
+  useCreateTaskMutation,
+  useGetTasksQuery,
+  useUpdateTaskMutation,
+} from '../shared/api/tasksApi'
 import { useGetUsersQuery } from '../shared/api/usersApi'
 import type { Project } from '../shared/types/project'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
@@ -171,12 +176,15 @@ function TasksPage() {
     isError: isProjectsError,
     isLoading: isProjectsLoading,
   } = useGetProjectsQuery()
+  const [createTask, { isLoading: isCreatingTask }] = useCreateTaskMutation()
   const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
+  const [createTaskError, setCreateTaskError] = useState<string | null>(null)
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null)
@@ -213,6 +221,25 @@ function TasksPage() {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       setSelectedTask(task)
+    }
+  }
+
+  async function handleCreateTask(values: TaskFormValues) {
+    setCreateTaskError(null)
+
+    try {
+      await createTask({
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        priority: values.priority,
+        assigneeId: values.assigneeId,
+        projectId: values.projectId,
+        dueDate: values.dueDate || undefined,
+      }).unwrap()
+      setIsCreateTaskOpen(false)
+    } catch {
+      setCreateTaskError('Could not create task. Please try again.')
     }
   }
 
@@ -266,6 +293,18 @@ function TasksPage() {
             <p>
               Review API tasks by status, priority, owner, project, and due date.
             </p>
+          </div>
+          <div className={styles.heroActions}>
+            <button
+              className={styles.primaryButton}
+              type="button"
+              onClick={() => {
+                setCreateTaskError(null)
+                setIsCreateTaskOpen(true)
+              }}
+            >
+              New Task
+            </button>
           </div>
         </div>
       </section>
@@ -514,6 +553,58 @@ function TasksPage() {
           projectName={getProjectName(selectedTask, projects)}
           onClose={() => setSelectedTask(null)}
         />
+      ) : null}
+
+      {isCreateTaskOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={() => {
+            if (!isCreatingTask) {
+              setIsCreateTaskOpen(false)
+            }
+          }}
+        >
+          <section
+            aria-labelledby="create-task-title"
+            aria-modal="true"
+            className={styles.createTaskModal}
+            role="dialog"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>New task</p>
+                <h2 id="create-task-title">Create task</h2>
+              </div>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={isCreatingTask}
+                onClick={() => setIsCreateTaskOpen(false)}
+              >
+                Close
+              </button>
+            </header>
+
+            {createTaskError ? (
+              <section className={styles.activityPanel} aria-live="polite">
+                <div className={styles.activityHeader}>
+                  <h4>Creation failed</h4>
+                </div>
+                <p className={styles.feedbackText}>{createTaskError}</p>
+              </section>
+            ) : null}
+
+            <TaskForm
+              assignees={users}
+              projects={projects}
+              isSubmitting={isCreatingTask}
+              submitLabel="Create task"
+              onSubmit={handleCreateTask}
+            />
+          </section>
+        </div>
       ) : null}
     </div>
   )

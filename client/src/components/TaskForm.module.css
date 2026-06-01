@@ -77,6 +77,11 @@
   background: #1f2937;
 }
 
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 @media (max-width: 720px) {
   .formGrid {
     grid-template-columns: 1fr;
