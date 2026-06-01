@@ -417,6 +417,11 @@
   background: #e0e7ff;
 }
 
+.archivedItem button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .archivedEmpty {
   margin: 0;
 }

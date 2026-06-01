@@ -15,8 +15,10 @@ import TaskDetailsModal from '../components/TaskDetailsModal'
 import TaskForm, { type TaskFormValues } from '../components/TaskForm'
 import { useGetProjectsQuery } from '../shared/api/projectsApi'
 import {
+  useArchiveTaskMutation,
   useCreateTaskMutation,
   useGetTasksQuery,
+  useRestoreTaskMutation,
   useUpdateTaskMutation,
 } from '../shared/api/tasksApi'
 import { useGetUsersQuery } from '../shared/api/usersApi'
@@ -167,6 +169,11 @@ function TasksPage() {
     isLoading: isTasksLoading,
   } = useGetTasksQuery()
   const {
+    data: archivedTasks = [],
+    isError: isArchivedTasksError,
+    isLoading: isArchivedTasksLoading,
+  } = useGetTasksQuery({ archived: true })
+  const {
     data: users = [],
     isError: isUsersError,
     isLoading: isUsersLoading,
@@ -176,7 +183,9 @@ function TasksPage() {
     isError: isProjectsError,
     isLoading: isProjectsLoading,
   } = useGetProjectsQuery()
+  const [archiveTask, { isLoading: isArchivingTask }] = useArchiveTaskMutation()
   const [createTask, { isLoading: isCreatingTask }] = useCreateTaskMutation()
+  const [restoreTask, { isLoading: isRestoringTask }] = useRestoreTaskMutation()
   const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
@@ -190,6 +199,7 @@ function TasksPage() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null)
+  const [archiveTaskError, setArchiveTaskError] = useState<string | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
@@ -200,8 +210,10 @@ function TasksPage() {
     ? tasks.find((task) => task.id === selectedTask.id) ?? selectedTask
     : null
   const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks])
-  const isLoading = isTasksLoading || isUsersLoading || isProjectsLoading
-  const isError = isTasksError || isUsersError || isProjectsError
+  const isLoading =
+    isTasksLoading || isArchivedTasksLoading || isUsersLoading || isProjectsLoading
+  const isError =
+    isTasksError || isArchivedTasksError || isUsersError || isProjectsError
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -274,20 +286,44 @@ function TasksPage() {
     }
   }
 
-  function addRecentActivity(task: Task, nextStatus: TaskStatus) {
+  function addRecentActivity(task: Task, description: string) {
     const activityCreatedAt = Date.now()
 
     setRecentActivity((currentActivity) =>
       [
         {
           id: `${task.id}-${activityCreatedAt}`,
-          description: `${taskStatusLabels[task.status]} to ${taskStatusLabels[nextStatus]}`,
+          description,
           taskTitle: task.title,
           createdAt: activityCreatedAt,
         },
         ...currentActivity,
       ].slice(0, 5),
     )
+  }
+
+  async function handleArchiveTask(task: Task) {
+    setArchiveTaskError(null)
+
+    try {
+      await archiveTask(task.id).unwrap()
+      addRecentActivity(task, 'Archived task')
+      setSelectedTask(null)
+      setIsEditTaskOpen(false)
+    } catch {
+      setArchiveTaskError('Could not archive task. Please try again.')
+    }
+  }
+
+  async function handleRestoreTask(task: Task) {
+    setArchiveTaskError(null)
+
+    try {
+      await restoreTask(task.id).unwrap()
+      addRecentActivity(task, 'Restored task')
+    } catch {
+      setArchiveTaskError('Could not restore task. Please try again.')
+    }
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -308,7 +344,10 @@ function TasksPage() {
 
     try {
       await updateTask({ id: taskId, status: nextStatus }).unwrap()
-      addRecentActivity(currentTask, nextStatus)
+      addRecentActivity(
+        currentTask,
+        `${taskStatusLabels[currentTask.status]} to ${taskStatusLabels[nextStatus]}`,
+      )
     } catch {
       setStatusUpdateError('Could not update task status. Please try again.')
     }
@@ -406,7 +445,7 @@ function TasksPage() {
       {isLoading ? (
         <section className={styles.emptyState} aria-live="polite">
           <h3>Loading tasks</h3>
-          <p>Fetching tasks, users, and projects from the API.</p>
+          <p>Fetching active tasks, archived tasks, users, and projects from the API.</p>
         </section>
       ) : null}
 
@@ -510,6 +549,15 @@ function TasksPage() {
               </section>
             ) : null}
 
+            {archiveTaskError ? (
+              <section className={styles.activityPanel} aria-live="polite">
+                <div className={styles.activityHeader}>
+                  <h4>Archive update failed</h4>
+                </div>
+                <p className={styles.feedbackText}>{archiveTaskError}</p>
+              </section>
+            ) : null}
+
             {recentActivity.length > 0 ? (
               <section className={styles.activityPanel} aria-label="Recent task activity">
                 <div className={styles.activityHeader}>
@@ -577,12 +625,53 @@ function TasksPage() {
         </DndContext>
       ) : null}
 
+      {!isLoading && !isError ? (
+        <section className={styles.archivedSection} aria-label="Archived tasks">
+          <div className={styles.sectionHeader}>
+            <div>
+              <p className={styles.eyebrow}>Archive</p>
+              <h3>Archived tasks</h3>
+            </div>
+            <span>
+              {isArchivingTask || isRestoringTask
+                ? 'Updating archive...'
+                : `${archivedTasks.length} archived`}
+            </span>
+          </div>
+
+          {archivedTasks.length > 0 ? (
+            <ul className={styles.archivedList}>
+              {archivedTasks.map((task) => (
+                <li key={task.id} className={styles.archivedItem}>
+                  <div>
+                    <strong>{task.title}</strong>
+                    <span>
+                      {getAssigneeName(task, users)} - {getProjectName(task, projects)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isArchivingTask || isRestoringTask}
+                    onClick={() => handleRestoreTask(task)}
+                  >
+                    Restore
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.archivedEmpty}>No archived tasks yet.</p>
+          )}
+        </section>
+      ) : null}
+
       {selectedTaskDetails && !isEditTaskOpen ? (
         <TaskDetailsModal
           task={selectedTaskDetails}
           assigneeName={getAssigneeName(selectedTaskDetails, users)}
           projectName={getProjectName(selectedTaskDetails, projects)}
           onClose={() => setSelectedTask(null)}
+          onArchive={() => handleArchiveTask(selectedTaskDetails)}
           onEdit={() => {
             setEditTaskError(null)
             setIsEditTaskOpen(true)
