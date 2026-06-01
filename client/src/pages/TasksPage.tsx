@@ -185,6 +185,8 @@ function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [createTaskError, setCreateTaskError] = useState<string | null>(null)
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
+  const [editTaskError, setEditTaskError] = useState<string | null>(null)
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [recentActivity, setRecentActivity] = useState<TaskActivityItem[]>([])
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null)
@@ -193,6 +195,9 @@ function TasksPage() {
   )
   const activeTask = activeTaskId
     ? tasks.find((task) => task.id === activeTaskId && !task.archived) ?? null
+    : null
+  const selectedTaskDetails = selectedTask
+    ? tasks.find((task) => task.id === selectedTask.id) ?? selectedTask
     : null
   const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks])
   const isLoading = isTasksLoading || isUsersLoading || isProjectsLoading
@@ -240,6 +245,32 @@ function TasksPage() {
       setIsCreateTaskOpen(false)
     } catch {
       setCreateTaskError('Could not create task. Please try again.')
+    }
+  }
+
+  async function handleEditTask(values: TaskFormValues) {
+    if (!selectedTaskDetails) {
+      return
+    }
+
+    setEditTaskError(null)
+
+    try {
+      const updatedTask = await updateTask({
+        id: selectedTaskDetails.id,
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        priority: values.priority,
+        assigneeId: values.assigneeId,
+        projectId: values.projectId,
+        dueDate: values.dueDate || undefined,
+      }).unwrap()
+
+      setSelectedTask(updatedTask)
+      setIsEditTaskOpen(false)
+    } catch {
+      setEditTaskError('Could not update task. Please try again.')
     }
   }
 
@@ -546,12 +577,16 @@ function TasksPage() {
         </DndContext>
       ) : null}
 
-      {selectedTask ? (
+      {selectedTaskDetails && !isEditTaskOpen ? (
         <TaskDetailsModal
-          task={selectedTask}
-          assigneeName={getAssigneeName(selectedTask, users)}
-          projectName={getProjectName(selectedTask, projects)}
+          task={selectedTaskDetails}
+          assigneeName={getAssigneeName(selectedTaskDetails, users)}
+          projectName={getProjectName(selectedTaskDetails, projects)}
           onClose={() => setSelectedTask(null)}
+          onEdit={() => {
+            setEditTaskError(null)
+            setIsEditTaskOpen(true)
+          }}
         />
       ) : null}
 
@@ -602,6 +637,60 @@ function TasksPage() {
               isSubmitting={isCreatingTask}
               submitLabel="Create task"
               onSubmit={handleCreateTask}
+            />
+          </section>
+        </div>
+      ) : null}
+
+      {selectedTaskDetails && isEditTaskOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={() => {
+            if (!isUpdatingTask) {
+              setIsEditTaskOpen(false)
+            }
+          }}
+        >
+          <section
+            aria-labelledby="edit-task-title"
+            aria-modal="true"
+            className={styles.createTaskModal}
+            role="dialog"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>Edit task</p>
+                <h2 id="edit-task-title">Update task</h2>
+              </div>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={isUpdatingTask}
+                onClick={() => setIsEditTaskOpen(false)}
+              >
+                Close
+              </button>
+            </header>
+
+            {editTaskError ? (
+              <section className={styles.activityPanel} aria-live="polite">
+                <div className={styles.activityHeader}>
+                  <h4>Update failed</h4>
+                </div>
+                <p className={styles.feedbackText}>{editTaskError}</p>
+              </section>
+            ) : null}
+
+            <TaskForm
+              key={selectedTaskDetails.id}
+              assignees={users}
+              projects={projects}
+              initialTask={selectedTaskDetails}
+              isSubmitting={isUpdatingTask}
+              submitLabel="Save task"
+              onSubmit={handleEditTask}
             />
           </section>
         </div>
