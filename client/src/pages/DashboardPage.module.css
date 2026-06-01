@@ -5,7 +5,8 @@
 
 .hero,
 .statCard,
-.panel {
+.panel,
+.stateCard {
   border: 1px solid #e5e7eb;
   border-radius: 1rem;
   background: #fff;
@@ -37,7 +38,7 @@
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
 }
 
@@ -69,6 +70,21 @@
 
 .panel {
   padding: 1.25rem;
+}
+
+.stateCard {
+  max-width: 520px;
+  padding: 1.5rem;
+}
+
+.stateCard h3 {
+  margin: 0 0 0.5rem;
+}
+
+.stateCard p,
+.panelEmpty {
+  margin: 0;
+  color: #6b7280;
 }
 
 .panelHeader {
@@ -171,6 +187,42 @@
 }
 
 .breakdownItem strong {
+  font-size: 1.25rem;
+}
+
+.progressItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  padding: 0.85rem 1rem;
+}
+
+.progressItem div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.progressItem span,
+.progressItem small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progressItem span {
+  color: #4b5563;
+}
+
+.progressItem small {
+  color: #6b7280;
+}
+
+.progressItem strong {
+  flex: 0 0 auto;
   font-size: 1.25rem;
 }
 
