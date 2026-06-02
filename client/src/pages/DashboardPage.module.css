@@ -42,6 +42,12 @@
   gap: 1rem;
 }
 
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
 .statCard {
   padding: 1.25rem;
 }
@@ -103,6 +109,11 @@
 .panelHeader span {
   color: #6b7280;
   font-size: 0.875rem;
+}
+
+.chartFrame {
+  width: 100%;
+  height: 240px;
 }
 
 .taskList,
@@ -228,6 +239,7 @@
 
 @media (max-width: 960px) {
   .statsGrid,
+  .chartsGrid,
   .contentGrid {
     grid-template-columns: 1fr 1fr;
   }
@@ -235,6 +247,7 @@
 
 @media (max-width: 720px) {
   .statsGrid,
+  .chartsGrid,
   .contentGrid {
     grid-template-columns: 1fr;
   }

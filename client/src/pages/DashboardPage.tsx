@@ -1,4 +1,13 @@
 import { useMemo } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { getDashboardMetrics } from '../features/dashboard/utils/dashboardMetrics'
 import { useGetProjectsQuery } from '../shared/api/projectsApi'
 import { useGetTasksQuery } from '../shared/api/tasksApi'
@@ -14,6 +23,17 @@ const taskStatusLabels: Record<TaskStatus, string> = {
   'in-progress': 'In progress',
   'in-review': 'In review',
   done: 'Done',
+}
+
+const taskPriorityLabels = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+}
+
+type ChartDatum = {
+  name: string
+  value: number
 }
 
 function getProjectName(projectId: string, projects: Project[]) {
@@ -37,6 +57,10 @@ function formatDate(date: string | undefined, fallback = 'No due date') {
   }).format(new Date(dateValue))
 }
 
+function hasChartData(data: ChartDatum[]) {
+  return data.some((item) => item.value > 0)
+}
+
 function StatCard({
   label,
   value,
@@ -52,6 +76,43 @@ function StatCard({
       <strong>{value}</strong>
       <span>{helperText}</span>
     </article>
+  )
+}
+
+function MetricBarChart({ data, emptyText }: { data: ChartDatum[]; emptyText: string }) {
+  if (!hasChartData(data)) {
+    return <p className={styles.panelEmpty}>{emptyText}</p>
+  }
+
+  return (
+    <div className={styles.chartFrame}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -24 }}>
+          <CartesianGrid stroke="#f3f4f6" vertical={false} />
+          <XAxis
+            dataKey="name"
+            axisLine={false}
+            tick={{ fill: '#6b7280', fontSize: 12 }}
+            tickLine={false}
+          />
+          <YAxis
+            allowDecimals={false}
+            axisLine={false}
+            tick={{ fill: '#6b7280', fontSize: 12 }}
+            tickLine={false}
+          />
+          <Tooltip
+            cursor={{ fill: '#f9fafb' }}
+            contentStyle={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.75rem',
+              boxShadow: '0 8px 24px rgb(15 23 42 / 0.12)',
+            }}
+          />
+          <Bar dataKey="value" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   )
 }
 
@@ -110,6 +171,24 @@ function DashboardPage() {
     status: status as TaskStatus,
     label: taskStatusLabels[status as TaskStatus],
     count,
+  }))
+  const statusChartData = statusBreakdown.map((item) => ({
+    name: item.label,
+    value: item.count,
+  }))
+  const priorityChartData = Object.entries(metrics.tasksByPriority).map(
+    ([priority, count]) => ({
+      name: taskPriorityLabels[priority as keyof typeof taskPriorityLabels],
+      value: count,
+    }),
+  )
+  const workloadChartData = metrics.workloadByAssignee.map((item) => ({
+    name: item.assigneeName,
+    value: item.activeTasks,
+  }))
+  const projectProgressChartData = metrics.projectProgress.map((item) => ({
+    name: item.projectName,
+    value: item.progressPercent,
   }))
 
   return (
@@ -172,6 +251,52 @@ function DashboardPage() {
               value={metrics.overdueTasks.length}
               helperText="Open tasks past due date"
             />
+          </section>
+
+          <section className={styles.chartsGrid} aria-label="Dashboard analytics charts">
+            <section className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <h3>Tasks by status</h3>
+                <span>{metrics.totalActiveTasks} active tasks</span>
+              </div>
+              <MetricBarChart
+                data={statusChartData}
+                emptyText="No active task status data to chart."
+              />
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <h3>Tasks by priority</h3>
+                <span>{metrics.totalActiveTasks} active tasks</span>
+              </div>
+              <MetricBarChart
+                data={priorityChartData}
+                emptyText="No active task priority data to chart."
+              />
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <h3>Workload by assignee</h3>
+                <span>{metrics.workloadByAssignee.length} people</span>
+              </div>
+              <MetricBarChart
+                data={workloadChartData}
+                emptyText="No active workload data to chart."
+              />
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <h3>Project progress</h3>
+                <span>{metrics.projectProgress.length} projects</span>
+              </div>
+              <MetricBarChart
+                data={projectProgressChartData}
+                emptyText="No project progress data to chart."
+              />
+            </section>
           </section>
 
           <div className={styles.contentGrid}>
