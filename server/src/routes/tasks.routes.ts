@@ -1,37 +1,44 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { tasks } from '../data/tasks.data.ts';
+import { TaskModel } from '../models/task.model.ts';
 import { createTaskSchema, updateTaskSchema } from '../schemas/task.schemas.ts';
 import type { Task } from '../types/task.types.ts';
 
 export const tasksRouter = Router();
 
-tasksRouter.get('/', (req, res) => {
-  const includeArchived = req.query.includeArchived === 'true';
-  const onlyArchived = req.query.archived === 'true';
+tasksRouter.get('/', async (req, res, next) => {
+  try {
+    const includeArchived = req.query.includeArchived === 'true';
+    const onlyArchived = req.query.archived === 'true';
+    const filter = includeArchived ? {} : { archived: onlyArchived };
+    const tasks = await TaskModel.find(filter)
+      .select('-_id -__v')
+      .sort({ createdAt: 1 })
+      .lean<Task[]>();
 
-  if (includeArchived) {
     return res.json(tasks);
+  } catch (error) {
+    return next(error);
   }
-
-  if (onlyArchived) {
-    return res.json(tasks.filter((task) => task.archived));
-  }
-
-  return res.json(tasks.filter((task) => !task.archived));
 });
 
-tasksRouter.get('/:id', (req, res) => {
-  const task = tasks.find((item) => item.id === req.params.id);
+tasksRouter.get('/:id', async (req, res, next) => {
+  try {
+    const task = await TaskModel.findOne({ id: req.params.id })
+      .select('-_id -__v')
+      .lean<Task>();
 
-  if (!task) {
-    return res.status(404).json({ message: 'Task not found' });
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    return res.json(task);
+  } catch (error) {
+    return next(error);
   }
-
-  return res.json(task);
 });
 
-tasksRouter.post('/', (req, res) => {
+tasksRouter.post('/', async (req, res, next) => {
   const result = createTaskSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -41,34 +48,30 @@ tasksRouter.post('/', (req, res) => {
     });
   }
 
-  const now = new Date().toISOString();
+  try {
+    const now = new Date().toISOString();
 
-  const newTask: Task = {
-    id: `task-${randomUUID()}`,
-    title: result.data.title,
-    description: result.data.description,
-    status: result.data.status,
-    priority: result.data.priority,
-    assigneeId: result.data.assigneeId,
-    projectId: result.data.projectId,
-    dueDate: result.data.dueDate,
-    createdAt: now,
-    updatedAt: now,
-    archived: false,
-  };
+    const newTask = await TaskModel.create({
+      id: `task-${randomUUID()}`,
+      title: result.data.title,
+      description: result.data.description,
+      status: result.data.status,
+      priority: result.data.priority,
+      assigneeId: result.data.assigneeId,
+      projectId: result.data.projectId,
+      dueDate: result.data.dueDate,
+      createdAt: now,
+      updatedAt: now,
+      archived: false,
+    });
 
-  tasks.push(newTask);
-
-  return res.status(201).json(newTask);
+    return res.status(201).json(newTask.toJSON());
+  } catch (error) {
+    return next(error);
+  }
 });
 
-tasksRouter.patch('/:id', (req, res) => {
-  const task = tasks.find((item) => item.id === req.params.id);
-
-  if (!task) {
-    return res.status(404).json({ message: 'Task not found' });
-  }
-
+tasksRouter.patch('/:id', async (req, res, next) => {
   const result = updateTaskSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -78,35 +81,64 @@ tasksRouter.patch('/:id', (req, res) => {
     });
   }
 
-  Object.assign(task, result.data, {
-    updatedAt: new Date().toISOString(),
-  });
+  try {
+    const task = await TaskModel.findOneAndUpdate(
+      { id: req.params.id },
+      {
+        ...result.data,
+        updatedAt: new Date().toISOString(),
+      },
+      { new: true, runValidators: true },
+    );
 
-  return res.json(task);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    return res.json(task.toJSON());
+  } catch (error) {
+    return next(error);
+  }
 });
 
-tasksRouter.patch('/:id/archive', (req, res) => {
-  const task = tasks.find((item) => item.id === req.params.id);
+tasksRouter.patch('/:id/archive', async (req, res, next) => {
+  try {
+    const task = await TaskModel.findOneAndUpdate(
+      { id: req.params.id },
+      {
+        archived: true,
+        updatedAt: new Date().toISOString(),
+      },
+      { new: true, runValidators: true },
+    );
 
-  if (!task) {
-    return res.status(404).json({ message: 'Task not found' });
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    return res.json(task.toJSON());
+  } catch (error) {
+    return next(error);
   }
-
-  task.archived = true;
-  task.updatedAt = new Date().toISOString();
-
-  return res.json(task);
 });
 
-tasksRouter.patch('/:id/restore', (req, res) => {
-  const task = tasks.find((item) => item.id === req.params.id);
+tasksRouter.patch('/:id/restore', async (req, res, next) => {
+  try {
+    const task = await TaskModel.findOneAndUpdate(
+      { id: req.params.id },
+      {
+        archived: false,
+        updatedAt: new Date().toISOString(),
+      },
+      { new: true, runValidators: true },
+    );
 
-  if (!task) {
-    return res.status(404).json({ message: 'Task not found' });
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    return res.json(task.toJSON());
+  } catch (error) {
+    return next(error);
   }
-
-  task.archived = false;
-  task.updatedAt = new Date().toISOString();
-
-  return res.json(task);
 });
