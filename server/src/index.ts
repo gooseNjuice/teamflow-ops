@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { app } from './app.ts';
 import { connectDatabase } from './config/database.ts';
+import { seedProjects } from './seed/seedProjects.ts';
 import { seedTasks } from './seed/seedTasks.ts';
 import { seedUsers } from './seed/seedUsers.ts';
 
@@ -10,6 +11,7 @@ async function startServer() {
   try {
     await connectDatabase();
     await seedUsers();
+    await seedProjects();
     await seedTasks();
 
     app.listen(PORT, () => {
