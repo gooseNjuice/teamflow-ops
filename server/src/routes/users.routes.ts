@@ -1,18 +1,34 @@
 import { Router } from 'express';
-import { users } from '../data/users.data.ts';
+import { UserModel } from '../models/user.model.ts';
+import type { User } from '../types/user.types.ts';
 
 export const usersRouter = Router();
 
-usersRouter.get('/', (_req, res) => {
-  return res.json(users);
+usersRouter.get('/', async (_req, res, next) => {
+  try {
+    const users = await UserModel.find({})
+      .select('-_id -__v')
+      .sort({ createdAt: 1 })
+      .lean<User[]>();
+
+    return res.json(users);
+  } catch (error) {
+    return next(error);
+  }
 });
 
-usersRouter.get('/:id', (req, res) => {
-  const user = users.find((item) => item.id === req.params.id);
+usersRouter.get('/:id', async (req, res, next) => {
+  try {
+    const user = await UserModel.findOne({ id: req.params.id })
+      .select('-_id -__v')
+      .lean<User>();
 
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    return next(error);
   }
-
-  return res.json(user);
 });
