@@ -4,7 +4,7 @@ type AsyncRouteHandler = (
   req: Request,
   res: Response,
   next: NextFunction,
-) => Promise<unknown>;
+) => Promise<unknown> | unknown;
 
 export function asyncHandler(handler: AsyncRouteHandler): RequestHandler {
   return (req, res, next) => {
