@@ -31,6 +31,11 @@ const userSchema = new Schema<User>(
     avatarUrl: {
       type: String,
     },
+    passwordHash: {
+      type: String,
+      required: true,
+      select: false,
+    },
     createdAt: {
       type: String,
       required: true,
@@ -41,14 +46,24 @@ const userSchema = new Schema<User>(
     id: false,
     toJSON: {
       transform: (_document, returnedObject: Record<string, unknown>) => {
-        const { _id: _ignoredId, __v: _ignoredVersion, ...user } = returnedObject;
+        const {
+          _id: _ignoredId,
+          __v: _ignoredVersion,
+          passwordHash: _ignoredPasswordHash,
+          ...user
+        } = returnedObject;
 
         return user;
       },
     },
     toObject: {
       transform: (_document, returnedObject: Record<string, unknown>) => {
-        const { _id: _ignoredId, __v: _ignoredVersion, ...user } = returnedObject;
+        const {
+          _id: _ignoredId,
+          __v: _ignoredVersion,
+          passwordHash: _ignoredPasswordHash,
+          ...user
+        } = returnedObject;
 
         return user;
       },

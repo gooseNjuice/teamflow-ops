@@ -6,5 +6,6 @@ export interface User {
   email: string;
   role: UserRole;
   avatarUrl?: string | undefined;
+  passwordHash?: string | undefined;
   createdAt: string;
 }
