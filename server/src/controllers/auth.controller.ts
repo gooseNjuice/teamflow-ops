@@ -34,3 +34,11 @@ export const login: RequestHandler = async (req, res) => {
 
   return res.json(authResult);
 };
+
+export const getCurrentUser: RequestHandler = async (req, res) => {
+  if (!req.user) {
+    throw new AppError('Authentication token is required', 401);
+  }
+
+  return res.json(req.user);
+};

@@ -1,7 +1,10 @@
-import jwt, { type SignOptions } from 'jsonwebtoken';
+import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
 import type { UserRole } from '../types/user.types.ts';
+import { AppError } from './AppError.ts';
 
-type AuthTokenPayload = {
+const userRoles: UserRole[] = ['admin', 'manager', 'developer', 'viewer'];
+
+export type AuthTokenPayload = {
   userId: string;
   email: string;
   role: UserRole;
@@ -24,4 +27,34 @@ export function signAuthToken(payload: AuthTokenPayload) {
   };
 
   return jwt.sign(payload, process.env.JWT_SECRET as string, options);
+}
+
+function isAuthTokenPayload(payload: string | JwtPayload): payload is AuthTokenPayload {
+  return (
+    typeof payload !== 'string' &&
+    typeof payload.userId === 'string' &&
+    typeof payload.email === 'string' &&
+    typeof payload.role === 'string' &&
+    userRoles.includes(payload.role as UserRole)
+  );
+}
+
+export function verifyAuthToken(token: string): AuthTokenPayload {
+  validateJwtConfig();
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET as string);
+
+    if (!isAuthTokenPayload(payload)) {
+      throw new AppError('Invalid authentication token', 401);
+    }
+
+    return payload;
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    throw new AppError('Invalid authentication token', 401);
+  }
 }

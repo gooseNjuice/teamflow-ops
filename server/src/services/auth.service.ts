@@ -2,11 +2,9 @@ import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { UserModel } from '../models/user.model.ts';
 import type { LoginInput, RegisterInput } from '../schemas/auth.schemas.ts';
-import type { User, UserRole } from '../types/user.types.ts';
+import type { PublicUser, User, UserRole } from '../types/user.types.ts';
 import { AppError } from '../utils/AppError.ts';
 import { signAuthToken } from '../utils/jwt.ts';
-
-type PublicUser = Omit<User, 'passwordHash'>;
 
 type AuthResult = {
   user: PublicUser;

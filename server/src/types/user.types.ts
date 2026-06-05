@@ -9,3 +9,5 @@ export interface User {
   passwordHash?: string | undefined;
   createdAt: string;
 }
+
+export type PublicUser = Omit<User, 'passwordHash'>;
