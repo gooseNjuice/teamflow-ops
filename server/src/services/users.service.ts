@@ -1,7 +1,5 @@
 import { UserModel } from '../models/user.model.ts';
-import type { User } from '../types/user.types.ts';
-
-type PublicUser = Omit<User, 'passwordHash'>;
+import type { PublicUser } from '../types/user.types.ts';
 
 export async function getUsers() {
   return UserModel.find({})
