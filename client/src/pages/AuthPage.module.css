@@ -1,0 +1,115 @@
+.authPage {
+  display: grid;
+  min-height: calc(100vh - 8rem);
+  place-items: center;
+}
+
+.authCard {
+  width: min(100%, 28rem);
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 18px 45px rgb(15 23 42 / 8%);
+}
+
+.authHeader {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.authHeader h2 {
+  margin: 0 0 0.5rem;
+  color: #111827;
+  font-size: 1.5rem;
+}
+
+.authHeader p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.form label {
+  display: grid;
+  gap: 0.5rem;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.form input,
+.form select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.75rem 0.9rem;
+  color: #111827;
+  font: inherit;
+}
+
+.form input:focus,
+.form select:focus {
+  border-color: #4f46e5;
+  outline: 3px solid #e0e7ff;
+}
+
+.errorMessage {
+  border-radius: 0.75rem;
+  background: #fef2f2;
+  padding: 0.75rem 0.9rem;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.primaryButton {
+  border: 0;
+  border-radius: 999px;
+  background: #111827;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.primaryButton:hover {
+  background: #1f2937;
+}
+
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.switchText {
+  margin: 1rem 0 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.switchText a {
+  color: #3730a3;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.switchText a:hover {
+  text-decoration: underline;
+}

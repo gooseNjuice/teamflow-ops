@@ -1,7 +1,9 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
+import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ProjectsPage from './pages/ProjectsPage'
+import RegisterPage from './pages/RegisterPage'
 import TasksPage from './pages/TasksPage'
 import styles from './App.module.css'
 
@@ -28,8 +30,17 @@ const placeholderPages = [
   },
 ]
 
+const standalonePageTitles: Record<string, string> = {
+  '/login': 'Login',
+  '/register': 'Register',
+}
+
 function getPageTitle(pathname: string) {
-  return navigationItems.find((item) => item.path === pathname)?.label ?? 'Dashboard'
+  return (
+    standalonePageTitles[pathname] ??
+    navigationItems.find((item) => item.path === pathname)?.label ??
+    'Dashboard'
+  )
 }
 
 function App() {
@@ -72,6 +83,8 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             {placeholderPages.map((page) => (
               <Route
                 key={page.path}
