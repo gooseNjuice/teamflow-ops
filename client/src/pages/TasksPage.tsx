@@ -13,6 +13,7 @@ import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import TaskCard from '../components/TaskCard'
 import TaskDetailsModal from '../components/TaskDetailsModal'
 import TaskForm, { type TaskFormValues } from '../components/TaskForm'
+import { useGetCurrentUserQuery } from '../shared/api/authApi'
 import { useGetProjectsQuery } from '../shared/api/projectsApi'
 import {
   useArchiveTaskMutation,
@@ -22,6 +23,12 @@ import {
   useUpdateTaskMutation,
 } from '../shared/api/tasksApi'
 import { useGetUsersQuery } from '../shared/api/usersApi'
+import {
+  canArchiveTask,
+  canCreateTask,
+  canEditTask,
+  canRestoreTask,
+} from '../shared/lib/permissions'
 import type { Project } from '../shared/types/project'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
 import type { User } from '../shared/types/user'
@@ -100,6 +107,7 @@ type DraggableTaskCardProps = {
   task: Task
   assigneeName: string
   projectName: string
+  isDragDisabled?: boolean
   onClick: () => void
 }
 
@@ -107,10 +115,12 @@ function DraggableTaskCard({
   task,
   assigneeName,
   projectName,
+  isDragDisabled = false,
   onClick,
 }: DraggableTaskCardProps) {
   const { attributes, isDragging, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
+    disabled: isDragDisabled,
     data: {
       taskId: task.id,
       status: task.status,
@@ -133,8 +143,8 @@ function DraggableTaskCard({
       projectName={projectName}
       isDragging={isDragging}
       onClick={onClick}
-      {...listeners}
-      {...attributes}
+      {...(isDragDisabled ? {} : listeners)}
+      {...(isDragDisabled ? {} : attributes)}
     />
   )
 }
@@ -163,6 +173,11 @@ function KanbanColumn({ children, status }: KanbanColumnProps) {
 }
 
 function TasksPage() {
+  const {
+    data: currentUser,
+    isError: isCurrentUserError,
+    isLoading: isCurrentUserLoading,
+  } = useGetCurrentUserQuery()
   const {
     data: tasks = [],
     isError: isTasksError,
@@ -203,6 +218,12 @@ function TasksPage() {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
+  const currentRole = currentUser?.role
+  const userCanCreateTask = canCreateTask(currentRole)
+  const userCanEditTask = canEditTask(currentRole)
+  const userCanArchiveTask = canArchiveTask(currentRole)
+  const userCanRestoreTask = canRestoreTask(currentRole)
+  const readOnlyTaskMessage = 'Your role can view tasks, but cannot change them.'
   const activeTask = activeTaskId
     ? tasks.find((task) => task.id === activeTaskId && !task.archived) ?? null
     : null
@@ -211,9 +232,17 @@ function TasksPage() {
     : null
   const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks])
   const isLoading =
-    isTasksLoading || isArchivedTasksLoading || isUsersLoading || isProjectsLoading
+    isCurrentUserLoading ||
+    isTasksLoading ||
+    isArchivedTasksLoading ||
+    isUsersLoading ||
+    isProjectsLoading
   const isError =
-    isTasksError || isArchivedTasksError || isUsersError || isProjectsError
+    isCurrentUserError ||
+    isTasksError ||
+    isArchivedTasksError ||
+    isUsersError ||
+    isProjectsError
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -242,6 +271,11 @@ function TasksPage() {
   }
 
   async function handleCreateTask(values: TaskFormValues) {
+    if (!userCanCreateTask) {
+      setCreateTaskError(readOnlyTaskMessage)
+      return
+    }
+
     setCreateTaskError(null)
 
     try {
@@ -261,7 +295,8 @@ function TasksPage() {
   }
 
   async function handleEditTask(values: TaskFormValues) {
-    if (!selectedTaskDetails) {
+    if (!selectedTaskDetails || !userCanEditTask) {
+      setEditTaskError(readOnlyTaskMessage)
       return
     }
 
@@ -303,6 +338,11 @@ function TasksPage() {
   }
 
   async function handleArchiveTask(task: Task) {
+    if (!userCanArchiveTask) {
+      setArchiveTaskError(readOnlyTaskMessage)
+      return
+    }
+
     setArchiveTaskError(null)
 
     try {
@@ -316,6 +356,11 @@ function TasksPage() {
   }
 
   async function handleRestoreTask(task: Task) {
+    if (!userCanRestoreTask) {
+      setArchiveTaskError(readOnlyTaskMessage)
+      return
+    }
+
     setArchiveTaskError(null)
 
     try {
@@ -327,11 +372,22 @@ function TasksPage() {
   }
 
   function handleDragStart(event: DragStartEvent) {
+    if (!userCanEditTask) {
+      setStatusUpdateError(readOnlyTaskMessage)
+      return
+    }
+
     setStatusUpdateError(null)
     setActiveTaskId(String(event.active.id))
   }
 
   async function handleDragEnd(event: DragEndEvent) {
+    if (!userCanEditTask) {
+      setActiveTaskId(null)
+      setStatusUpdateError(readOnlyTaskMessage)
+      return
+    }
+
     const taskId = String(event.active.id)
     const nextStatus = event.over?.data.current?.status
     const currentTask = activeTasks.find((task) => task.id === taskId)
@@ -368,7 +424,13 @@ function TasksPage() {
             <button
               className={styles.primaryButton}
               type="button"
+              disabled={!userCanCreateTask}
+              title={!userCanCreateTask ? readOnlyTaskMessage : undefined}
               onClick={() => {
+                if (!userCanCreateTask) {
+                  return
+                }
+
                 setCreateTaskError(null)
                 setIsCreateTaskOpen(true)
               }}
@@ -445,7 +507,10 @@ function TasksPage() {
       {isLoading ? (
         <section className={styles.emptyState} aria-live="polite">
           <h3>Loading tasks</h3>
-          <p>Fetching active tasks, archived tasks, users, and projects from the API.</p>
+          <p>
+            Fetching your user, active tasks, archived tasks, users, and projects
+            from the API.
+          </p>
         </section>
       ) : null}
 
@@ -540,6 +605,10 @@ function TasksPage() {
               </span>
             </div>
 
+            {!userCanEditTask ? (
+              <p className={styles.helperText}>{readOnlyTaskMessage}</p>
+            ) : null}
+
             {statusUpdateError ? (
               <section className={styles.activityPanel} aria-live="polite">
                 <div className={styles.activityHeader}>
@@ -601,6 +670,7 @@ function TasksPage() {
                             task={task}
                             assigneeName={getAssigneeName(task, users)}
                             projectName={getProjectName(task, projects)}
+                            isDragDisabled={!userCanEditTask}
                             onClick={() => setSelectedTask(task)}
                           />
                         ))}
@@ -651,7 +721,10 @@ function TasksPage() {
                   </div>
                   <button
                     type="button"
-                    disabled={isArchivingTask || isRestoringTask}
+                    disabled={
+                      isArchivingTask || isRestoringTask || !userCanRestoreTask
+                    }
+                    title={!userCanRestoreTask ? readOnlyTaskMessage : undefined}
                     onClick={() => handleRestoreTask(task)}
                   >
                     Restore
@@ -671,11 +744,19 @@ function TasksPage() {
           assigneeName={getAssigneeName(selectedTaskDetails, users)}
           projectName={getProjectName(selectedTaskDetails, projects)}
           onClose={() => setSelectedTask(null)}
-          onArchive={() => handleArchiveTask(selectedTaskDetails)}
-          onEdit={() => {
-            setEditTaskError(null)
-            setIsEditTaskOpen(true)
-          }}
+          onArchive={
+            userCanArchiveTask
+              ? () => handleArchiveTask(selectedTaskDetails)
+              : undefined
+          }
+          onEdit={
+            userCanEditTask
+              ? () => {
+                  setEditTaskError(null)
+                  setIsEditTaskOpen(true)
+                }
+              : undefined
+          }
         />
       ) : null}
 

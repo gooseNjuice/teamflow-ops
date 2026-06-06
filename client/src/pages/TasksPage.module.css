@@ -74,6 +74,7 @@
   background: #1f2937;
 }
 
+.primaryButton:disabled,
 .secondaryButton:disabled {
   cursor: not-allowed;
   opacity: 0.65;
@@ -275,6 +276,12 @@
 }
 
 .sectionHeader span {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.helperText {
+  margin: 0;
   color: #6b7280;
   font-size: 0.875rem;
 }
