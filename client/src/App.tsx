@@ -1,10 +1,23 @@
-import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import {
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
+import RequireAuth from './components/RequireAuth'
+import { useAppDispatch } from './app/hooks'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ProjectsPage from './pages/ProjectsPage'
 import RegisterPage from './pages/RegisterPage'
 import TasksPage from './pages/TasksPage'
+import { baseApi } from './shared/api/baseApi'
+import { useGetCurrentUserQuery } from './shared/api/authApi'
+import { clearToken, getToken } from './shared/lib/authToken'
 import styles from './App.module.css'
 
 const navigationItems = [
@@ -43,8 +56,41 @@ function getPageTitle(pathname: string) {
   )
 }
 
+function isUnauthorizedError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    error.status === 401
+  )
+}
+
 function App() {
+  const dispatch = useAppDispatch()
   const location = useLocation()
+  const navigate = useNavigate()
+  const token = getToken()
+  const {
+    data: currentUser,
+    error: currentUserError,
+    isFetching: isCheckingUser,
+  } = useGetCurrentUserQuery(undefined, {
+    skip: !token,
+  })
+
+  useEffect(() => {
+    if (isUnauthorizedError(currentUserError)) {
+      clearToken()
+      dispatch(baseApi.util.resetApiState())
+      navigate('/login', { replace: true })
+    }
+  }, [currentUserError, dispatch, navigate])
+
+  function handleLogout() {
+    clearToken()
+    dispatch(baseApi.util.resetApiState())
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className={styles.appShell}>
@@ -74,15 +120,55 @@ function App() {
       <div className={styles.workspace}>
         <header className={styles.topBar}>
           <h1>{getPageTitle(location.pathname)}</h1>
-          <span className={styles.userBadge}>TeamFlow Admin</span>
+          <div className={styles.userControls}>
+            {currentUser ? (
+              <div className={styles.userSummary}>
+                <span>{currentUser.name}</span>
+                <span>{currentUser.role}</span>
+              </div>
+            ) : token && isCheckingUser ? (
+              <span className={styles.userBadge}>Checking session</span>
+            ) : null}
+
+            {token ? (
+              <button
+                className={styles.logoutButton}
+                onClick={handleLogout}
+                type="button"
+              >
+                Logout
+              </button>
+            ) : null}
+          </div>
         </header>
 
         <main className={styles.mainContent}>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <DashboardPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <RequireAuth>
+                  <ProjectsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <RequireAuth>
+                  <TasksPage />
+                </RequireAuth>
+              }
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             {placeholderPages.map((page) => (
@@ -90,11 +176,13 @@ function App() {
                 key={page.path}
                 path={page.path}
                 element={
-                  <PlaceholderPage
-                    eyebrow={page.eyebrow}
-                    title={page.title}
-                    description={page.description}
-                  />
+                  <RequireAuth>
+                    <PlaceholderPage
+                      eyebrow={page.eyebrow}
+                      title={page.title}
+                      description={page.description}
+                    />
+                  </RequireAuth>
                 }
               />
             ))}
