@@ -15,6 +15,7 @@ import { useGetUsersQuery } from '../shared/api/usersApi'
 import type { Project } from '../shared/types/project'
 import type { Task, TaskStatus } from '../shared/types/task'
 import type { User } from '../shared/types/user'
+import { EmptyState, ErrorState, LoadingState } from '../shared/ui/ApiState'
 import styles from './DashboardPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
@@ -146,16 +147,19 @@ function TaskSummaryItem({
 function DashboardPage() {
   const {
     data: tasks = [],
+    error: tasksError,
     isError: isTasksError,
     isLoading: isTasksLoading,
   } = useGetTasksQuery()
   const {
     data: users = [],
+    error: usersError,
     isError: isUsersError,
     isLoading: isUsersLoading,
   } = useGetUsersQuery()
   const {
     data: projects = [],
+    error: projectsError,
     isError: isProjectsError,
     isLoading: isProjectsLoading,
   } = useGetProjectsQuery()
@@ -166,6 +170,7 @@ function DashboardPage() {
   )
   const isLoading = isTasksLoading || isUsersLoading || isProjectsLoading
   const isError = isTasksError || isUsersError || isProjectsError
+  const apiError = tasksError ?? usersError ?? projectsError
   const isEmpty = tasks.length === 0 && projects.length === 0
   const statusBreakdown = Object.entries(metrics.tasksByStatus).map(([status, count]) => ({
     status: status as TaskStatus,
@@ -203,24 +208,24 @@ function DashboardPage() {
       </section>
 
       {isLoading ? (
-        <section className={styles.stateCard} aria-live="polite">
-          <h3>Loading dashboard</h3>
-          <p>Fetching tasks, users, and projects from the API.</p>
-        </section>
+        <LoadingState
+          title="Loading dashboard"
+          description="Fetching tasks, users, and projects from the API."
+        />
       ) : null}
 
       {isError ? (
-        <section className={styles.stateCard} aria-live="polite">
-          <h3>Could not load dashboard</h3>
-          <p>Check that the Express server is running and try again.</p>
-        </section>
+        <ErrorState
+          error={apiError}
+          title="Could not load dashboard"
+        />
       ) : null}
 
       {!isLoading && !isError && isEmpty ? (
-        <section className={styles.stateCard}>
-          <h3>No dashboard data yet</h3>
-          <p>The API returned no tasks or projects to summarize.</p>
-        </section>
+        <EmptyState
+          title="No dashboard data yet"
+          description="The API returned no tasks or projects to summarize."
+        />
       ) : null}
 
       {!isLoading && !isError && !isEmpty ? (
