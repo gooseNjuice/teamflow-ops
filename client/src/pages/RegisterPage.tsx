@@ -1,9 +1,15 @@
-import { FormEvent, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
+import { z } from 'zod'
 import { useRegisterMutation } from '../shared/api/authApi'
+import { getApiErrorMessage } from '../shared/lib/apiErrors'
 import { setToken } from '../shared/lib/authToken'
 import type { UserRole } from '../shared/types/user'
 import styles from './AuthPage.module.css'
+
+const userRoleOptions = ['developer', 'manager', 'viewer', 'admin'] as const
 
 const roleOptions: Array<{ label: string; value: UserRole }> = [
   { label: 'Developer', value: 'developer' },
@@ -12,25 +18,53 @@ const roleOptions: Array<{ label: string; value: UserRole }> = [
   { label: 'Admin', value: 'admin' },
 ]
 
+const registerSchema = z.object({
+  name: z.string().trim().min(1, 'Enter your name.'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Enter your email.')
+    .email('Enter a valid email address.')
+    .toLowerCase(),
+  password: z.string().min(8, 'Use at least 8 characters.'),
+  role: z.enum(userRoleOptions).default('developer'),
+})
+
+type RegisterFormFieldValues = z.input<typeof registerSchema>
+type RegisterFormValues = z.output<typeof registerSchema>
+
 function RegisterPage() {
   const navigate = useNavigate()
   const [register, { isLoading }] = useRegisterMutation()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<UserRole>('developer')
   const [errorMessage, setErrorMessage] = useState('')
+  const {
+    formState: { errors, isSubmitting },
+    handleSubmit,
+    register: registerField,
+  } = useForm<RegisterFormFieldValues, unknown, RegisterFormValues>({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      role: 'developer',
+    },
+    mode: 'onBlur',
+    resolver: zodResolver(registerSchema),
+  })
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const isSubmitDisabled = isLoading || isSubmitting
+
+  async function handleValidSubmit(values: RegisterFormValues) {
     setErrorMessage('')
 
     try {
-      const response = await register({ name, email, password, role }).unwrap()
+      const response = await register(values).unwrap()
       setToken(response.token)
       navigate('/dashboard', { replace: true })
-    } catch {
-      setErrorMessage('Unable to create that account.')
+    } catch (error) {
+      setErrorMessage(
+        getApiErrorMessage(error, 'Unable to create that account.'),
+      )
     }
   }
 
@@ -43,51 +77,65 @@ function RegisterPage() {
           <p>Set up access for the demo workspace.</p>
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form
+          className={styles.form}
+          noValidate
+          onSubmit={handleSubmit(handleValidSubmit)}
+        >
           {errorMessage ? (
             <div className={styles.errorMessage} role="alert">
               {errorMessage}
             </div>
           ) : null}
 
-          <label>
+          <label htmlFor="register-name">
             Name
             <input
+              id="register-name"
+              aria-invalid={errors.name ? 'true' : 'false'}
               autoComplete="name"
-              onChange={(event) => setName(event.target.value)}
-              required
               type="text"
-              value={name}
+              {...registerField('name')}
             />
+            {errors.name ? (
+              <span className={styles.fieldError}>{errors.name.message}</span>
+            ) : null}
           </label>
 
-          <label>
+          <label htmlFor="register-email">
             Email
             <input
+              id="register-email"
+              aria-invalid={errors.email ? 'true' : 'false'}
               autoComplete="email"
-              onChange={(event) => setEmail(event.target.value)}
-              required
               type="email"
-              value={email}
+              {...registerField('email')}
             />
+            {errors.email ? (
+              <span className={styles.fieldError}>{errors.email.message}</span>
+            ) : null}
           </label>
 
-          <label>
+          <label htmlFor="register-password">
             Password
             <input
+              id="register-password"
+              aria-invalid={errors.password ? 'true' : 'false'}
               autoComplete="new-password"
-              onChange={(event) => setPassword(event.target.value)}
-              required
               type="password"
-              value={password}
+              {...registerField('password')}
             />
+            {errors.password ? (
+              <span className={styles.fieldError}>{errors.password.message}</span>
+            ) : null}
           </label>
 
-          <label>
+          <label htmlFor="register-role">
             Role
             <select
-              onChange={(event) => setRole(event.target.value as UserRole)}
-              value={role}
+              id="register-role"
+              aria-invalid={errors.role ? 'true' : 'false'}
+              {...registerField('role')}
             >
               {roleOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -95,10 +143,17 @@ function RegisterPage() {
                 </option>
               ))}
             </select>
+            {errors.role ? (
+              <span className={styles.fieldError}>{errors.role.message}</span>
+            ) : null}
           </label>
 
-          <button className={styles.primaryButton} disabled={isLoading} type="submit">
-            {isLoading ? 'Creating account...' : 'Create account'}
+          <button
+            className={styles.primaryButton}
+            disabled={isSubmitDisabled}
+            type="submit"
+          >
+            {isSubmitDisabled ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 

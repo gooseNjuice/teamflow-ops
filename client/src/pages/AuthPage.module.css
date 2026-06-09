@@ -67,12 +67,23 @@
   outline: 3px solid #e0e7ff;
 }
 
+.form input[aria-invalid='true'],
+.form select[aria-invalid='true'] {
+  border-color: #dc2626;
+}
+
 .errorMessage {
   border-radius: 0.75rem;
   background: #fef2f2;
   padding: 0.75rem 0.9rem;
   color: #b91c1c;
   font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.fieldError {
+  color: #b91c1c;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
