@@ -17,7 +17,8 @@ import RegisterPage from './pages/RegisterPage'
 import TasksPage from './pages/TasksPage'
 import { baseApi } from './shared/api/baseApi'
 import { useGetCurrentUserQuery } from './shared/api/authApi'
-import { clearToken, getToken } from './shared/lib/authToken'
+import { clearToken } from './shared/lib/authToken'
+import { useAuthToken } from './shared/lib/useAuthToken'
 import styles from './App.module.css'
 
 const navigationItems = [
@@ -69,7 +70,7 @@ function App() {
   const dispatch = useAppDispatch()
   const location = useLocation()
   const navigate = useNavigate()
-  const token = getToken()
+  const token = useAuthToken()
   const {
     data: currentUser,
     error: currentUserError,
