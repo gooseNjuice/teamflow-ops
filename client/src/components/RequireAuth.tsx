@@ -3,7 +3,8 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAppDispatch } from '../app/hooks'
 import { baseApi } from '../shared/api/baseApi'
 import { useGetCurrentUserQuery } from '../shared/api/authApi'
-import { clearToken, getToken } from '../shared/lib/authToken'
+import { clearToken } from '../shared/lib/authToken'
+import { useAuthToken } from '../shared/lib/useAuthToken'
 
 type RequireAuthProps = {
   children: ReactNode
@@ -21,7 +22,7 @@ function isUnauthorizedError(error: unknown) {
 function RequireAuth({ children }: RequireAuthProps) {
   const dispatch = useAppDispatch()
   const location = useLocation()
-  const token = getToken()
+  const token = useAuthToken()
   const {
     error,
     isError,

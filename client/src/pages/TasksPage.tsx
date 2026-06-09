@@ -29,6 +29,7 @@ import {
   canEditTask,
   canRestoreTask,
 } from '../shared/lib/permissions'
+import { getPermissionAwareErrorMessage } from '../shared/lib/apiErrors'
 import type { Project } from '../shared/types/project'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
 import type { User } from '../shared/types/user'
@@ -289,8 +290,13 @@ function TasksPage() {
         dueDate: values.dueDate || undefined,
       }).unwrap()
       setIsCreateTaskOpen(false)
-    } catch {
-      setCreateTaskError('Could not create task. Please try again.')
+    } catch (error) {
+      setCreateTaskError(
+        getPermissionAwareErrorMessage(
+          error,
+          'Could not create task. Please try again.',
+        ),
+      )
     }
   }
 
@@ -316,8 +322,13 @@ function TasksPage() {
 
       setSelectedTask(updatedTask)
       setIsEditTaskOpen(false)
-    } catch {
-      setEditTaskError('Could not update task. Please try again.')
+    } catch (error) {
+      setEditTaskError(
+        getPermissionAwareErrorMessage(
+          error,
+          'Could not update task. Please try again.',
+        ),
+      )
     }
   }
 
@@ -350,8 +361,13 @@ function TasksPage() {
       addRecentActivity(task, 'Archived task')
       setSelectedTask(null)
       setIsEditTaskOpen(false)
-    } catch {
-      setArchiveTaskError('Could not archive task. Please try again.')
+    } catch (error) {
+      setArchiveTaskError(
+        getPermissionAwareErrorMessage(
+          error,
+          'Could not archive task. Please try again.',
+        ),
+      )
     }
   }
 
@@ -366,8 +382,13 @@ function TasksPage() {
     try {
       await restoreTask(task.id).unwrap()
       addRecentActivity(task, 'Restored task')
-    } catch {
-      setArchiveTaskError('Could not restore task. Please try again.')
+    } catch (error) {
+      setArchiveTaskError(
+        getPermissionAwareErrorMessage(
+          error,
+          'Could not restore task. Please try again.',
+        ),
+      )
     }
   }
 
@@ -404,8 +425,13 @@ function TasksPage() {
         currentTask,
         `${taskStatusLabels[currentTask.status]} to ${taskStatusLabels[nextStatus]}`,
       )
-    } catch {
-      setStatusUpdateError('Could not update task status. Please try again.')
+    } catch (error) {
+      setStatusUpdateError(
+        getPermissionAwareErrorMessage(
+          error,
+          'Could not update task status. Please try again.',
+        ),
+      )
     }
   }
 
