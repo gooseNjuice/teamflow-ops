@@ -33,6 +33,7 @@ import { getPermissionAwareErrorMessage } from '../shared/lib/apiErrors'
 import type { Project } from '../shared/types/project'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
 import type { User } from '../shared/types/user'
+import { EmptyState, ErrorState, LoadingState } from '../shared/ui/ApiState'
 import styles from './TasksPage.module.css'
 
 const taskStatusLabels: Record<TaskStatus, string> = {
@@ -176,26 +177,31 @@ function KanbanColumn({ children, status }: KanbanColumnProps) {
 function TasksPage() {
   const {
     data: currentUser,
+    error: currentUserError,
     isError: isCurrentUserError,
     isLoading: isCurrentUserLoading,
   } = useGetCurrentUserQuery()
   const {
     data: tasks = [],
+    error: tasksError,
     isError: isTasksError,
     isLoading: isTasksLoading,
   } = useGetTasksQuery()
   const {
     data: archivedTasks = [],
+    error: archivedTasksError,
     isError: isArchivedTasksError,
     isLoading: isArchivedTasksLoading,
   } = useGetTasksQuery({ archived: true })
   const {
     data: users = [],
+    error: usersError,
     isError: isUsersError,
     isLoading: isUsersLoading,
   } = useGetUsersQuery()
   const {
     data: projects = [],
+    error: projectsError,
     isError: isProjectsError,
     isLoading: isProjectsLoading,
   } = useGetProjectsQuery()
@@ -244,6 +250,12 @@ function TasksPage() {
     isArchivedTasksError ||
     isUsersError ||
     isProjectsError
+  const apiError =
+    currentUserError ??
+    tasksError ??
+    archivedTasksError ??
+    usersError ??
+    projectsError
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -531,20 +543,17 @@ function TasksPage() {
       </section>
 
       {isLoading ? (
-        <section className={styles.emptyState} aria-live="polite">
-          <h3>Loading tasks</h3>
-          <p>
-            Fetching your user, active tasks, archived tasks, users, and projects
-            from the API.
-          </p>
-        </section>
+        <LoadingState
+          title="Loading tasks"
+          description="Fetching your user, active tasks, archived tasks, users, and projects from the API."
+        />
       ) : null}
 
       {isError ? (
-        <section className={styles.emptyState} aria-live="polite">
-          <h3>Could not load tasks</h3>
-          <p>Check that the Express server is running and try again.</p>
-        </section>
+        <ErrorState
+          error={apiError}
+          title="Could not load tasks"
+        />
       ) : null}
 
       {!isLoading && !isError && filteredTasks.length > 0 ? (
@@ -603,14 +612,14 @@ function TasksPage() {
       ) : null}
 
       {!isLoading && !isError && filteredTasks.length === 0 ? (
-        <section className={styles.emptyState}>
-          <h3>{activeTasks.length === 0 ? 'No active tasks yet' : 'No tasks found'}</h3>
-          <p>
-            {activeTasks.length === 0
+        <EmptyState
+          title={activeTasks.length === 0 ? 'No active tasks yet' : 'No tasks found'}
+          description={
+            activeTasks.length === 0
               ? 'The API returned an empty active task list.'
-              : 'Try changing the search query or clearing one of the filters.'}
-          </p>
-        </section>
+              : 'Try changing the search query or clearing one of the filters.'
+          }
+        />
       ) : null}
 
       {!isLoading && !isError ? (

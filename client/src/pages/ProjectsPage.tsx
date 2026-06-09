@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useGetProjectsQuery } from '../shared/api/projectsApi'
 import type { ProjectStatus } from '../shared/types/project'
+import { EmptyState, ErrorState, LoadingState } from '../shared/ui/ApiState'
 import styles from './ProjectsPage.module.css'
 
 const projectStatusLabels: Record<ProjectStatus, string> = {
@@ -21,7 +22,12 @@ function formatDate(date: string) {
 
 function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const { data: projects = [], isError, isLoading } = useGetProjectsQuery()
+  const {
+    data: projects = [],
+    error,
+    isError,
+    isLoading,
+  } = useGetProjectsQuery()
 
   const filteredProjects = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -55,17 +61,17 @@ function ProjectsPage() {
       </section>
 
       {isLoading ? (
-        <section className={styles.emptyState} aria-live="polite">
-          <h3>Loading projects</h3>
-          <p>Fetching the latest project portfolio.</p>
-        </section>
+        <LoadingState
+          title="Loading projects"
+          description="Fetching the latest project portfolio."
+        />
       ) : null}
 
       {isError ? (
-        <section className={styles.emptyState} aria-live="polite">
-          <h3>Could not load projects</h3>
-          <p>Check that the Express server is running and try again.</p>
-        </section>
+        <ErrorState
+          error={error}
+          title="Could not load projects"
+        />
       ) : null}
 
       {!isLoading && !isError && filteredProjects.length > 0 ? (
@@ -106,14 +112,14 @@ function ProjectsPage() {
       ) : null}
 
       {!isLoading && !isError && filteredProjects.length === 0 ? (
-        <section className={styles.emptyState}>
-          <h3>{projects.length === 0 ? 'No projects yet' : 'No projects found'}</h3>
-          <p>
-            {projects.length === 0
+        <EmptyState
+          title={projects.length === 0 ? 'No projects yet' : 'No projects found'}
+          description={
+            projects.length === 0
               ? 'The API returned an empty project list.'
-              : 'Try searching for another project name.'}
-          </p>
-        </section>
+              : 'Try searching for another project name.'
+          }
+        />
       ) : null}
     </div>
   )

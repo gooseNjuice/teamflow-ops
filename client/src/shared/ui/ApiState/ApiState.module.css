@@ -1,0 +1,33 @@
+.stateCard {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 520px;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.stateCard h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.stateCard p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.errorCard {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
