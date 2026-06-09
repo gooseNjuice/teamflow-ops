@@ -1,26 +1,56 @@
-import { FormEvent, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
+import { z } from 'zod'
 import { useLoginMutation } from '../shared/api/authApi'
+import { getApiErrorMessage } from '../shared/lib/apiErrors'
 import { setToken } from '../shared/lib/authToken'
 import styles from './AuthPage.module.css'
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Enter your email.')
+    .email('Enter a valid email address.')
+    .toLowerCase(),
+  password: z.string().min(1, 'Enter your password.'),
+})
+
+type LoginFormFieldValues = z.input<typeof loginSchema>
+type LoginFormValues = z.output<typeof loginSchema>
 
 function LoginPage() {
   const navigate = useNavigate()
   const [login, { isLoading }] = useLoginMutation()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const {
+    formState: { errors, isSubmitting },
+    handleSubmit,
+    register,
+  } = useForm<LoginFormFieldValues, unknown, LoginFormValues>({
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    mode: 'onBlur',
+    resolver: zodResolver(loginSchema),
+  })
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const isSubmitDisabled = isLoading || isSubmitting
+
+  async function handleValidSubmit(values: LoginFormValues) {
     setErrorMessage('')
 
     try {
-      const response = await login({ email, password }).unwrap()
+      const response = await login(values).unwrap()
       setToken(response.token)
       navigate('/dashboard', { replace: true })
-    } catch {
-      setErrorMessage('Unable to sign in with those credentials.')
+    } catch (error) {
+      setErrorMessage(
+        getApiErrorMessage(error, 'Unable to sign in with those credentials.'),
+      )
     }
   }
 
@@ -33,37 +63,51 @@ function LoginPage() {
           <p>Use your workspace account to continue.</p>
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form
+          className={styles.form}
+          noValidate
+          onSubmit={handleSubmit(handleValidSubmit)}
+        >
           {errorMessage ? (
             <div className={styles.errorMessage} role="alert">
               {errorMessage}
             </div>
           ) : null}
 
-          <label>
+          <label htmlFor="login-email">
             Email
             <input
+              id="login-email"
+              aria-invalid={errors.email ? 'true' : 'false'}
               autoComplete="email"
-              onChange={(event) => setEmail(event.target.value)}
-              required
               type="email"
-              value={email}
+              {...register('email')}
             />
+            {errors.email ? (
+              <span className={styles.fieldError}>{errors.email.message}</span>
+            ) : null}
           </label>
 
-          <label>
+          <label htmlFor="login-password">
             Password
             <input
+              id="login-password"
+              aria-invalid={errors.password ? 'true' : 'false'}
               autoComplete="current-password"
-              onChange={(event) => setPassword(event.target.value)}
-              required
               type="password"
-              value={password}
+              {...register('password')}
             />
+            {errors.password ? (
+              <span className={styles.fieldError}>{errors.password.message}</span>
+            ) : null}
           </label>
 
-          <button className={styles.primaryButton} disabled={isLoading} type="submit">
-            {isLoading ? 'Signing in...' : 'Sign in'}
+          <button
+            className={styles.primaryButton}
+            disabled={isSubmitDisabled}
+            type="submit"
+          >
+            {isSubmitDisabled ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
