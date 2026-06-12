@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import TaskDetailsModal from '../components/TaskDetailsModal'
 import {
   getOverdueTasks,
   getTasksByPriority,
@@ -9,7 +10,7 @@ import { useGetProjectQuery } from '../shared/api/projectsApi'
 import { useGetTasksQuery } from '../shared/api/tasksApi'
 import { useGetUsersQuery } from '../shared/api/usersApi'
 import type { ProjectStatus } from '../shared/types/project'
-import type { TaskPriority, TaskStatus } from '../shared/types/task'
+import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/ApiState'
 import styles from './ProjectDetailsPage.module.css'
 
@@ -34,7 +35,11 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   high: 'High',
 }
 
-function formatDate(date: string) {
+function formatDate(date: string | undefined, fallback = 'No date') {
+  if (!date) {
+    return fallback
+  }
+
   const dateValue = date.includes('T') ? date : `${date}T00:00:00`
 
   return new Intl.DateTimeFormat('en', {
@@ -55,6 +60,11 @@ function isNotFoundError(error: unknown) {
 
 function ProjectDetailsPage() {
   const { projectId } = useParams()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
+  const [assigneeFilter, setAssigneeFilter] = useState('all')
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const {
     data: project,
     error: projectError,
@@ -104,6 +114,28 @@ function ProjectDetailsPage() {
     () => [...projectActiveTasks, ...projectArchivedTasks],
     [projectActiveTasks, projectArchivedTasks],
   )
+  const filteredProjectTasks = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+
+    return projectTasks.filter((task) => {
+      const matchesSearch =
+        !normalizedQuery || task.title.toLowerCase().includes(normalizedQuery)
+      const matchesStatus = statusFilter === 'all' || task.status === statusFilter
+      const matchesPriority =
+        priorityFilter === 'all' || task.priority === priorityFilter
+      const matchesAssignee =
+        assigneeFilter === 'all' || task.assigneeId === assigneeFilter
+
+      return matchesSearch && matchesStatus && matchesPriority && matchesAssignee
+    })
+  }, [assigneeFilter, priorityFilter, projectTasks, searchQuery, statusFilter])
+  const projectAssignees = useMemo(
+    () =>
+      users.filter((user) =>
+        projectTasks.some((task) => task.assigneeId === user.id),
+      ),
+    [projectTasks, users],
+  )
   const completedTasksCount = projectTasks.filter(
     (task) => task.status === 'done',
   ).length
@@ -117,6 +149,20 @@ function ProjectDetailsPage() {
       : 0
   const tasksByStatus = getTasksByStatus(projectTasks)
   const tasksByPriority = getTasksByPriority(projectTasks)
+
+  function getAssigneeName(task: Task) {
+    return users.find((user) => user.id === task.assigneeId)?.name ?? 'Unassigned'
+  }
+
+  function handleTaskRowKeyDown(
+    event: KeyboardEvent<HTMLTableRowElement>,
+    task: Task,
+  ) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      setSelectedTask(task)
+    }
+  }
 
   return (
     <div className={styles.projectDetailsPage}>
@@ -236,6 +282,134 @@ function ProjectDetailsPage() {
                   </div>
                 </article>
               </section>
+
+              <section className={styles.tasksSection} aria-label="Project tasks">
+                <div className={styles.sectionHeader}>
+                  <div>
+                    <p className={styles.eyebrow}>Tasks</p>
+                    <h3>Project task list</h3>
+                  </div>
+                  <span>
+                    {filteredProjectTasks.length} of {projectTasks.length} shown
+                  </span>
+                </div>
+
+                <div className={styles.filters} aria-label="Project task filters">
+                  <label htmlFor="project-task-search">
+                    Search tasks
+                    <input
+                      id="project-task-search"
+                      type="search"
+                      placeholder="Search by task title"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                    />
+                  </label>
+
+                  <label htmlFor="project-task-status">
+                    Status
+                    <select
+                      id="project-task-status"
+                      value={statusFilter}
+                      onChange={(event) =>
+                        setStatusFilter(event.target.value as TaskStatus | 'all')
+                      }
+                    >
+                      <option value="all">All statuses</option>
+                      {Object.entries(taskStatusLabels).map(([status, label]) => (
+                        <option key={status} value={status}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label htmlFor="project-task-priority">
+                    Priority
+                    <select
+                      id="project-task-priority"
+                      value={priorityFilter}
+                      onChange={(event) =>
+                        setPriorityFilter(
+                          event.target.value as TaskPriority | 'all',
+                        )
+                      }
+                    >
+                      <option value="all">All priorities</option>
+                      {Object.entries(taskPriorityLabels).map(([priority, label]) => (
+                        <option key={priority} value={priority}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label htmlFor="project-task-assignee">
+                    Assignee
+                    <select
+                      id="project-task-assignee"
+                      value={assigneeFilter}
+                      onChange={(event) => setAssigneeFilter(event.target.value)}
+                    >
+                      <option value="all">All assignees</option>
+                      {projectAssignees.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {filteredProjectTasks.length > 0 ? (
+                  <div className={styles.tableScroller}>
+                    <table className={styles.tasksTable}>
+                      <thead>
+                        <tr>
+                          <th scope="col">Title</th>
+                          <th scope="col">Status</th>
+                          <th scope="col">Priority</th>
+                          <th scope="col">Assignee</th>
+                          <th scope="col">Due date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredProjectTasks.map((task) => (
+                          <tr
+                            key={task.id}
+                            className={styles.clickableRow}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setSelectedTask(task)}
+                            onKeyDown={(event) => handleTaskRowKeyDown(event, task)}
+                          >
+                            <td>
+                              <strong>{task.title}</strong>
+                            </td>
+                            <td>
+                              <span className={`${styles.pill} ${styles[task.status]}`}>
+                                {taskStatusLabels[task.status]}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`${styles.pill} ${styles[task.priority]}`}>
+                                {taskPriorityLabels[task.priority]}
+                              </span>
+                            </td>
+                            <td>{getAssigneeName(task)}</td>
+                            <td>{formatDate(task.dueDate, 'No due date')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No tasks match these filters"
+                    description="Try changing the search query or clearing one of the filters."
+                  />
+                )}
+              </section>
             </>
           ) : (
             <EmptyState
@@ -244,6 +418,15 @@ function ProjectDetailsPage() {
             />
           )}
         </>
+      ) : null}
+
+      {selectedTask && project ? (
+        <TaskDetailsModal
+          task={selectedTask}
+          assigneeName={getAssigneeName(selectedTask)}
+          projectName={project.name}
+          onClose={() => setSelectedTask(null)}
+        />
       ) : null}
     </div>
   )
