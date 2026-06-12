@@ -12,6 +12,7 @@ import { useAppDispatch } from './app/hooks'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import ProjectDetailsPage from './pages/ProjectDetailsPage'
 import ProjectsPage from './pages/ProjectsPage'
 import RegisterPage from './pages/RegisterPage'
 import TasksPage from './pages/TasksPage'
@@ -50,6 +51,10 @@ const standalonePageTitles: Record<string, string> = {
 }
 
 function getPageTitle(pathname: string) {
+  if (pathname.startsWith('/projects/')) {
+    return 'Project Details'
+  }
+
   return (
     standalonePageTitles[pathname] ??
     navigationItems.find((item) => item.path === pathname)?.label ??
@@ -159,6 +164,14 @@ function App() {
               element={
                 <RequireAuth>
                   <ProjectsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/projects/:projectId"
+              element={
+                <RequireAuth>
+                  <ProjectDetailsPage />
                 </RequireAuth>
               }
             />

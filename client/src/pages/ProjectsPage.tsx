@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useGetProjectsQuery } from '../shared/api/projectsApi'
 import type { ProjectStatus } from '../shared/types/project'
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/ApiState'
@@ -77,7 +78,11 @@ function ProjectsPage() {
       {!isLoading && !isError && filteredProjects.length > 0 ? (
         <section className={styles.projectGrid} aria-label="Projects list">
           {filteredProjects.map((project) => (
-            <article key={project.id} className={styles.projectCard}>
+            <Link
+              key={project.id}
+              className={styles.projectCard}
+              to={`/projects/${project.id}`}
+            >
               <div className={styles.projectHeader}>
                 <div>
                   <h3>{project.name}</h3>
@@ -106,7 +111,7 @@ function ProjectsPage() {
                   <dd>{formatDate(project.updatedAt)}</dd>
                 </div>
               </dl>
-            </article>
+            </Link>
           ))}
         </section>
       ) : null}
