@@ -52,6 +52,36 @@ npm run dev
 
 The Vite dev server will print the local URL, usually `http://localhost:5173/`.
 
+## Run with Docker Compose
+
+Docker Compose starts the local MongoDB database, Express backend, and React frontend:
+
+```bash
+docker compose up --build
+```
+
+Local URLs:
+
+- Client: `http://localhost:5173`
+- Server health: `http://localhost:4000/api/health`
+
+Demo users are seeded with the shared password `Password123!`. Example login:
+
+- Email: `maya.cohen@teamflow.example`
+- Password: `Password123!`
+
+Stop the local stack with:
+
+```bash
+docker compose down
+```
+
+Reset MongoDB demo data by removing the named volume:
+
+```bash
+docker compose down -v
+```
+
 ## Available Scripts
 
 Run these from the `client/` directory:
