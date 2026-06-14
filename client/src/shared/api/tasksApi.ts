@@ -63,9 +63,12 @@ export const tasksApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: [
+      invalidatesTags: (result) => [
         { type: 'Task', id: 'LIST' },
         { type: 'Task', id: 'ALL' },
+        ...(result
+          ? [{ type: 'TaskActivity' as const, id: `TASK-${result.id}` }]
+          : []),
       ],
     }),
     updateTask: builder.mutation<Task, UpdateTaskRequest>({
@@ -76,6 +79,7 @@ export const tasksApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { id }) => [
         { type: 'Task', id },
+        { type: 'TaskActivity', id: `TASK-${id}` },
         ...taskListTags,
       ],
     }),
@@ -86,6 +90,7 @@ export const tasksApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, id) => [
         { type: 'Task', id },
+        { type: 'TaskActivity', id: `TASK-${id}` },
         ...taskListTags,
       ],
     }),
@@ -96,6 +101,7 @@ export const tasksApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, id) => [
         { type: 'Task', id },
+        { type: 'TaskActivity', id: `TASK-${id}` },
         ...taskListTags,
       ],
     }),

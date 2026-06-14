@@ -27,6 +27,7 @@ export const commentsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { taskId }) => [
         { type: 'TaskComment', id: `TASK-${taskId}` },
+        { type: 'TaskActivity', id: `TASK-${taskId}` },
       ],
     }),
   }),
