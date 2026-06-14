@@ -1,11 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useCreateTaskCommentMutation, useGetTaskCommentsQuery } from '../shared/api/commentsApi'
+import { getPermissionAwareErrorMessage } from '../shared/lib/apiErrors'
+import { canCommentOnTask } from '../shared/lib/permissions'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
+import type { User, UserRole } from '../shared/types/user'
 import styles from './TaskDetailsModal.module.css'
 
 type TaskDetailsModalProps = {
   task: Task
   assigneeName: string
   projectName: string
+  users?: User[]
+  currentUserRole?: UserRole
   onClose: () => void
   onArchive?: () => void
   onEdit?: () => void
@@ -42,11 +48,26 @@ function formatDate(date: string | undefined, fallback = 'No date') {
 function TaskDetailsModal({
   task,
   assigneeName,
+  currentUserRole,
   projectName,
+  users = [],
   onClose,
   onArchive,
   onEdit,
 }: TaskDetailsModalProps) {
+  const [commentBody, setCommentBody] = useState('')
+  const [commentError, setCommentError] = useState<string | null>(null)
+  const {
+    data: comments = [],
+    error: commentsError,
+    isError: isCommentsError,
+    isLoading: isCommentsLoading,
+  } = useGetTaskCommentsQuery(task.id)
+  const [createTaskComment, { isLoading: isCreatingComment }] =
+    useCreateTaskCommentMutation()
+  const userCanComment = canCommentOnTask(currentUserRole)
+  const trimmedCommentBody = commentBody.trim()
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -57,6 +78,40 @@ function TaskDetailsModal({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
+
+  useEffect(() => {
+    setCommentBody('')
+    setCommentError(null)
+  }, [task.id])
+
+  function getAuthorName(authorId: string) {
+    return users.find((user) => user.id === authorId)?.name ?? 'Unknown author'
+  }
+
+  async function handleCreateComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!userCanComment || !trimmedCommentBody) {
+      return
+    }
+
+    setCommentError(null)
+
+    try {
+      await createTaskComment({
+        taskId: task.id,
+        body: trimmedCommentBody,
+      }).unwrap()
+      setCommentBody('')
+    } catch (error) {
+      setCommentError(
+        getPermissionAwareErrorMessage(
+          error,
+          'Could not add comment. Please try again.',
+        ),
+      )
+    }
+  }
 
   return (
     <div className={styles.backdrop} role="presentation" onMouseDown={onClose}>
@@ -129,6 +184,82 @@ function TaskDetailsModal({
             <dd>{formatDate(task.updatedAt)}</dd>
           </div>
         </dl>
+
+        <section className={styles.commentsSection} aria-labelledby="task-comments-title">
+          <div className={styles.commentsHeader}>
+            <div>
+              <p className={styles.eyebrow}>Comments</p>
+              <h3 id="task-comments-title">Task discussion</h3>
+            </div>
+            <span>{comments.length} comments</span>
+          </div>
+
+          {isCommentsLoading ? (
+            <p className={styles.commentsState}>Loading comments...</p>
+          ) : null}
+
+          {isCommentsError ? (
+            <p className={styles.commentsError} role="alert">
+              {getPermissionAwareErrorMessage(
+                commentsError,
+                'Could not load comments. Please try again.',
+              )}
+            </p>
+          ) : null}
+
+          {!isCommentsLoading && !isCommentsError && comments.length === 0 ? (
+            <p className={styles.commentsState}>No comments yet.</p>
+          ) : null}
+
+          {!isCommentsLoading && !isCommentsError && comments.length > 0 ? (
+            <ul className={styles.commentsList}>
+              {comments.map((comment) => (
+                <li key={comment.id} className={styles.commentItem}>
+                  <p>{comment.body}</p>
+                  <div>
+                    <span>{getAuthorName(comment.authorId)}</span>
+                    <time dateTime={comment.createdAt}>
+                      {formatDate(comment.createdAt)}
+                    </time>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {userCanComment ? (
+            <form className={styles.commentForm} onSubmit={handleCreateComment}>
+              <label htmlFor={`comment-${task.id}`}>
+                Add a comment
+                <textarea
+                  id={`comment-${task.id}`}
+                  rows={3}
+                  value={commentBody}
+                  onChange={(event) => setCommentBody(event.target.value)}
+                  placeholder="Write a short update or note"
+                />
+              </label>
+
+              {commentError ? (
+                <p className={styles.commentsError} role="alert">
+                  {commentError}
+                </p>
+              ) : null}
+
+              <button
+                className={styles.commentSubmitButton}
+                type="submit"
+                disabled={isCreatingComment || !trimmedCommentBody}
+              >
+                {isCreatingComment ? 'Adding...' : 'Add comment'}
+              </button>
+            </form>
+          ) : (
+            <p className={styles.commentsState}>
+              Your role can read comments, but cannot add them.
+            </p>
+          )}
+        </section>
       </section>
     </div>
   )

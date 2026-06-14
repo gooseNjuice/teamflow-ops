@@ -116,6 +116,128 @@
   font-weight: 700;
 }
 
+.commentsSection {
+  margin-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1.25rem;
+}
+
+.commentsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.commentsHeader h3 {
+  margin: 0.25rem 0 0;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.commentsHeader span {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.commentsState,
+.commentsError {
+  margin: 0.75rem 0;
+  border-radius: 0.875rem;
+  background: #f9fafb;
+  color: #4b5563;
+  padding: 0.85rem 1rem;
+}
+
+.commentsError {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.commentsList {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.commentItem {
+  border-radius: 0.875rem;
+  background: #f9fafb;
+  padding: 0.9rem 1rem;
+}
+
+.commentItem p {
+  margin: 0;
+  color: #111827;
+  line-height: 1.5;
+}
+
+.commentItem div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.commentForm {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.commentForm label {
+  display: grid;
+  gap: 0.45rem;
+  color: #374151;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.commentForm textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #d1d5db;
+  border-radius: 0.875rem;
+  padding: 0.75rem 0.85rem;
+  color: #111827;
+  font: inherit;
+  font-weight: 500;
+}
+
+.commentForm textarea:focus {
+  border-color: #4f46e5;
+  outline: 3px solid rgb(79 70 229 / 0.16);
+}
+
+.commentSubmitButton {
+  justify-self: end;
+  border: 0;
+  border-radius: 999px;
+  background: #4f46e5;
+  color: #fff;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.commentSubmitButton:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.commentSubmitButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .pill {
   display: inline-flex;
   border-radius: 999px;
