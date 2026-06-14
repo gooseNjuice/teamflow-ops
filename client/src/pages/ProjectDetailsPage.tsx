@@ -6,6 +6,7 @@ import {
   getTasksByPriority,
   getTasksByStatus,
 } from '../features/dashboard/utils/dashboardMetrics'
+import { useGetCurrentUserQuery } from '../shared/api/authApi'
 import { useGetProjectQuery } from '../shared/api/projectsApi'
 import { useGetTasksQuery } from '../shared/api/tasksApi'
 import { useGetUsersQuery } from '../shared/api/usersApi'
@@ -65,6 +66,7 @@ function ProjectDetailsPage() {
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const { data: currentUser } = useGetCurrentUserQuery()
   const {
     data: project,
     error: projectError,
@@ -425,6 +427,8 @@ function ProjectDetailsPage() {
           task={selectedTask}
           assigneeName={getAssigneeName(selectedTask)}
           projectName={project.name}
+          users={users}
+          currentUserRole={currentUser?.role}
           onClose={() => setSelectedTask(null)}
         />
       ) : null}

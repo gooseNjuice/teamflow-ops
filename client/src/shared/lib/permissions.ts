@@ -11,6 +11,10 @@ export function canEditTask(role: UserRole | undefined) {
   return canCreateTask(role)
 }
 
+export function canCommentOnTask(role: UserRole | undefined) {
+  return canCreateTask(role)
+}
+
 export function canArchiveTask(role: UserRole | undefined) {
   return !!role && taskArchiveRoles.includes(role)
 }

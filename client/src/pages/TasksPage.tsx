@@ -778,6 +778,8 @@ function TasksPage() {
           task={selectedTaskDetails}
           assigneeName={getAssigneeName(selectedTaskDetails, users)}
           projectName={getProjectName(selectedTaskDetails, projects)}
+          users={users}
+          currentUserRole={currentRole}
           onClose={() => setSelectedTask(null)}
           onArchive={
             userCanArchiveTask
