@@ -8,6 +8,7 @@ import {
   updateTaskHandler,
 } from '../controllers/tasks.controller.ts';
 import { requireRoles } from '../middleware/role.middleware.ts';
+import { activityRouter } from './activity.routes.ts';
 import { commentsRouter } from './comments.routes.ts';
 import { asyncHandler } from '../utils/asyncHandler.ts';
 
@@ -17,6 +18,7 @@ const canWriteTasks = requireRoles('admin', 'manager', 'developer');
 const canArchiveTasks = requireRoles('admin', 'manager');
 
 tasksRouter.get('/', asyncHandler(listTasks));
+tasksRouter.use('/:taskId/activity', activityRouter);
 tasksRouter.use('/:taskId/comments', commentsRouter);
 tasksRouter.get('/:id', asyncHandler(getTask));
 tasksRouter.post('/', canWriteTasks, asyncHandler(createTaskHandler));

@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import { createTaskSchema, updateTaskSchema } from '../schemas/task.schemas.ts';
+import { createTaskActivity } from '../services/activity.service.ts';
 import {
   createTask,
   getTaskById,
@@ -8,6 +9,7 @@ import {
   updateTask,
 } from '../services/tasks.service.ts';
 import { AppError } from '../utils/AppError.ts';
+import type { Task } from '../types/task.types.ts';
 
 function getTaskId(params: { id?: string | string[] }) {
   if (typeof params.id !== 'string') {
@@ -15,6 +17,22 @@ function getTaskId(params: { id?: string | string[] }) {
   }
 
   return params.id;
+}
+
+function getActorId(req: Parameters<RequestHandler>[0]) {
+  return req.user?.id ?? 'system';
+}
+
+function getChangedFields(
+  previousTask: Task,
+  updatedTask: Task,
+  fields: string[],
+) {
+  return fields.filter((field) => {
+    const key = field as keyof Task;
+
+    return previousTask[key] !== updatedTask[key];
+  });
 }
 
 export const listTasks: RequestHandler = async (req, res) => {
@@ -48,6 +66,12 @@ export const createTaskHandler: RequestHandler = async (req, res) => {
   }
 
   const task = await createTask(result.data);
+  await createTaskActivity({
+    taskId: task.id,
+    actorId: getActorId(req),
+    type: 'task_created',
+    message: `Created task "${task.title}"`,
+  });
 
   return res.status(201).json(task);
 };
@@ -63,10 +87,49 @@ export const updateTaskHandler: RequestHandler = async (req, res) => {
     );
   }
 
-  const task = await updateTask(getTaskId(req.params), result.data);
+  const taskId = getTaskId(req.params);
+  const previousTask = await getTaskById(taskId);
+
+  if (!previousTask) {
+    throw new AppError('Task not found', 404);
+  }
+
+  const task = await updateTask(taskId, result.data);
 
   if (!task) {
     throw new AppError('Task not found', 404);
+  }
+
+  const changedFields = getChangedFields(
+    previousTask,
+    task,
+    Object.keys(result.data),
+  );
+  const nonStatusChangedFields = changedFields.filter((field) => field !== 'status');
+
+  if (previousTask.status !== task.status) {
+    await createTaskActivity({
+      taskId: task.id,
+      actorId: getActorId(req),
+      type: 'status_changed',
+      message: `Changed status from ${previousTask.status} to ${task.status}`,
+      metadata: {
+        previousStatus: previousTask.status,
+        nextStatus: task.status,
+      },
+    });
+  }
+
+  if (nonStatusChangedFields.length > 0) {
+    await createTaskActivity({
+      taskId: task.id,
+      actorId: getActorId(req),
+      type: 'task_updated',
+      message: `Updated task "${task.title}"`,
+      metadata: {
+        changedFields: nonStatusChangedFields,
+      },
+    });
   }
 
   return res.json(task);
@@ -79,6 +142,13 @@ export const archiveTask: RequestHandler = async (req, res) => {
     throw new AppError('Task not found', 404);
   }
 
+  await createTaskActivity({
+    taskId: task.id,
+    actorId: getActorId(req),
+    type: 'task_archived',
+    message: `Archived task "${task.title}"`,
+  });
+
   return res.json(task);
 };
 
@@ -88,6 +158,13 @@ export const restoreTask: RequestHandler = async (req, res) => {
   if (!task) {
     throw new AppError('Task not found', 404);
   }
+
+  await createTaskActivity({
+    taskId: task.id,
+    actorId: getActorId(req),
+    type: 'task_restored',
+    message: `Restored task "${task.title}"`,
+  });
 
   return res.json(task);
 };
