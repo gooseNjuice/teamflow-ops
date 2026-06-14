@@ -238,6 +238,80 @@
   opacity: 0.55;
 }
 
+.activitySection {
+  margin-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1.25rem;
+}
+
+.activityHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.activityHeader h3 {
+  margin: 0.25rem 0 0;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.activityHeader span {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.activityState,
+.activityError {
+  margin: 0.75rem 0;
+  border-radius: 0.875rem;
+  background: #f9fafb;
+  color: #4b5563;
+  padding: 0.85rem 1rem;
+}
+
+.activityError {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.activityList {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activityItem {
+  border-left: 3px solid #c7d2fe;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  padding: 0.85rem 1rem;
+}
+
+.activityItem p {
+  margin: 0.55rem 0 0;
+  color: #111827;
+  line-height: 1.5;
+}
+
+.activityMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.activityType {
+  color: #3730a3;
+}
+
 .pill {
   display: inline-flex;
   border-radius: 999px;

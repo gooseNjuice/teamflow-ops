@@ -1,7 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useCreateTaskCommentMutation, useGetTaskCommentsQuery } from '../shared/api/commentsApi'
+import { useGetTaskActivityQuery } from '../shared/api/activityApi'
+import {
+  useCreateTaskCommentMutation,
+  useGetTaskCommentsQuery,
+} from '../shared/api/commentsApi'
 import { getPermissionAwareErrorMessage } from '../shared/lib/apiErrors'
 import { canCommentOnTask } from '../shared/lib/permissions'
+import type { TaskActivityType } from '../shared/types/activity'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
 import type { User, UserRole } from '../shared/types/user'
 import styles from './TaskDetailsModal.module.css'
@@ -29,6 +34,15 @@ const taskPriorityLabels: Record<TaskPriority, string> = {
   low: 'Low',
   medium: 'Medium',
   high: 'High',
+}
+
+const taskActivityTypeLabels: Record<TaskActivityType, string> = {
+  task_created: 'Created',
+  task_updated: 'Updated',
+  status_changed: 'Status changed',
+  task_archived: 'Archived',
+  task_restored: 'Restored',
+  comment_created: 'Commented',
 }
 
 function formatDate(date: string | undefined, fallback = 'No date') {
@@ -63,6 +77,12 @@ function TaskDetailsModal({
     isError: isCommentsError,
     isLoading: isCommentsLoading,
   } = useGetTaskCommentsQuery(task.id)
+  const {
+    data: activity = [],
+    error: activityError,
+    isError: isActivityError,
+    isLoading: isActivityLoading,
+  } = useGetTaskActivityQuery(task.id)
   const [createTaskComment, { isLoading: isCreatingComment }] =
     useCreateTaskCommentMutation()
   const userCanComment = canCommentOnTask(currentUserRole)
@@ -84,8 +104,8 @@ function TaskDetailsModal({
     setCommentError(null)
   }, [task.id])
 
-  function getAuthorName(authorId: string) {
-    return users.find((user) => user.id === authorId)?.name ?? 'Unknown author'
+  function getUserName(userId: string, fallback: string) {
+    return users.find((user) => user.id === userId)?.name ?? fallback
   }
 
   async function handleCreateComment(event: FormEvent<HTMLFormElement>) {
@@ -217,7 +237,7 @@ function TaskDetailsModal({
                 <li key={comment.id} className={styles.commentItem}>
                   <p>{comment.body}</p>
                   <div>
-                    <span>{getAuthorName(comment.authorId)}</span>
+                    <span>{getUserName(comment.authorId, 'Unknown author')}</span>
                     <time dateTime={comment.createdAt}>
                       {formatDate(comment.createdAt)}
                     </time>
@@ -259,6 +279,52 @@ function TaskDetailsModal({
               Your role can read comments, but cannot add them.
             </p>
           )}
+        </section>
+
+        <section className={styles.activitySection} aria-labelledby="task-activity-title">
+          <div className={styles.activityHeader}>
+            <div>
+              <p className={styles.eyebrow}>Activity</p>
+              <h3 id="task-activity-title">Task activity log</h3>
+            </div>
+            <span>{activity.length} events</span>
+          </div>
+
+          {isActivityLoading ? (
+            <p className={styles.activityState}>Loading activity...</p>
+          ) : null}
+
+          {isActivityError ? (
+            <p className={styles.activityError} role="alert">
+              {getPermissionAwareErrorMessage(
+                activityError,
+                'Could not load activity. Please try again.',
+              )}
+            </p>
+          ) : null}
+
+          {!isActivityLoading && !isActivityError && activity.length === 0 ? (
+            <p className={styles.activityState}>No activity recorded yet.</p>
+          ) : null}
+
+          {!isActivityLoading && !isActivityError && activity.length > 0 ? (
+            <ol className={styles.activityList}>
+              {activity.map((item) => (
+                <li key={item.id} className={styles.activityItem}>
+                  <div className={styles.activityMeta}>
+                    <span className={styles.activityType}>
+                      {taskActivityTypeLabels[item.type]}
+                    </span>
+                    <span>{getUserName(item.actorId, 'Unknown actor')}</span>
+                    <time dateTime={item.createdAt}>
+                      {formatDate(item.createdAt)}
+                    </time>
+                  </div>
+                  <p>{item.message}</p>
+                </li>
+              ))}
+            </ol>
+          ) : null}
         </section>
       </section>
     </div>

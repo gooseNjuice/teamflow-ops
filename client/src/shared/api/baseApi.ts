@@ -38,6 +38,6 @@ const baseQueryWithAuthHandling: BaseQueryFn<
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithAuthHandling,
-  tagTypes: ['Task', 'TaskComment'],
+  tagTypes: ['Task', 'TaskActivity', 'TaskComment'],
   endpoints: () => ({}),
 })
