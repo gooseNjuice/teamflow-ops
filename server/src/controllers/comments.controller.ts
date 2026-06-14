@@ -4,6 +4,7 @@ import {
   createTaskComment,
   getCommentsByTaskId,
 } from '../services/comments.service.ts';
+import { createTaskActivity } from '../services/activity.service.ts';
 import { getTaskById } from '../services/tasks.service.ts';
 import { AppError } from '../utils/AppError.ts';
 
@@ -47,6 +48,15 @@ export const createTaskCommentHandler: RequestHandler = async (req, res) => {
     taskId,
     authorId: req.user.id,
     body: result.data.body,
+  });
+  await createTaskActivity({
+    taskId,
+    actorId: req.user.id,
+    type: 'comment_created',
+    message: `Commented on task "${task.title}"`,
+    metadata: {
+      commentId: comment.id,
+    },
   });
 
   return res.status(201).json(comment);
