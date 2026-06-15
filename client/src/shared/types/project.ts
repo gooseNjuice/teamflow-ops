@@ -9,3 +9,18 @@ export type Project = {
   createdAt: string
   updatedAt: string
 }
+
+export type CreateProjectRequest = {
+  name: string
+  description?: string
+  status?: ProjectStatus
+  ownerId?: string
+}
+
+export type UpdateProjectRequest = {
+  id: string
+  name?: string
+  description?: string
+  status?: ProjectStatus
+  ownerId?: string
+}
