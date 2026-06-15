@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-const userRoleSchema = z.enum(['admin', 'manager', 'developer', 'viewer']);
+import { userRoleSchema } from './user.schemas.ts';
 
 export const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),

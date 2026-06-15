@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
-import { getUserById, getUsers } from '../services/users.service.ts';
+import { updateUserSchema } from '../schemas/user.schemas.ts';
+import { getUserById, getUsers, updateUser } from '../services/users.service.ts';
 import { AppError } from '../utils/AppError.ts';
 
 function getUserId(params: { id?: string | string[] }) {
@@ -18,6 +19,26 @@ export const listUsers: RequestHandler = async (_req, res) => {
 
 export const getUser: RequestHandler = async (req, res) => {
   const user = await getUserById(getUserId(req.params));
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  return res.json(user);
+};
+
+export const updateUserHandler: RequestHandler = async (req, res) => {
+  const result = updateUserSchema.safeParse(req.body);
+
+  if (!result.success) {
+    throw new AppError(
+      'Invalid user data',
+      400,
+      result.error.flatten().fieldErrors,
+    );
+  }
+
+  const user = await updateUser(getUserId(req.params), result.data);
 
   if (!user) {
     throw new AppError('User not found', 404);
