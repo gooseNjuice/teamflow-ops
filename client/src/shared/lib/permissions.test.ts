@@ -6,7 +6,9 @@ import {
   canCreateTask,
   canEditProject,
   canEditTask,
+  canManageUsers,
   canRestoreTask,
+  canUpdateUserRole,
 } from './permissions'
 
 describe('task permission helpers', () => {
@@ -18,6 +20,8 @@ describe('task permission helpers', () => {
     expect(canRestoreTask('admin')).toBe(true)
     expect(canCreateProject('admin')).toBe(true)
     expect(canEditProject('admin')).toBe(true)
+    expect(canManageUsers('admin')).toBe(true)
+    expect(canUpdateUserRole('admin')).toBe(true)
 
     expect(canCreateTask('manager')).toBe(true)
     expect(canEditTask('manager')).toBe(true)
@@ -26,6 +30,8 @@ describe('task permission helpers', () => {
     expect(canRestoreTask('manager')).toBe(true)
     expect(canCreateProject('manager')).toBe(true)
     expect(canEditProject('manager')).toBe(true)
+    expect(canManageUsers('manager')).toBe(false)
+    expect(canUpdateUserRole('manager')).toBe(false)
   })
 
   it('allows developers to create and edit tasks only', () => {
@@ -36,6 +42,8 @@ describe('task permission helpers', () => {
     expect(canRestoreTask('developer')).toBe(false)
     expect(canCreateProject('developer')).toBe(false)
     expect(canEditProject('developer')).toBe(false)
+    expect(canManageUsers('developer')).toBe(false)
+    expect(canUpdateUserRole('developer')).toBe(false)
   })
 
   it('keeps viewers and missing roles read-only', () => {
@@ -46,6 +54,8 @@ describe('task permission helpers', () => {
     expect(canRestoreTask('viewer')).toBe(false)
     expect(canCreateProject('viewer')).toBe(false)
     expect(canEditProject('viewer')).toBe(false)
+    expect(canManageUsers('viewer')).toBe(false)
+    expect(canUpdateUserRole('viewer')).toBe(false)
 
     expect(canCreateTask(undefined)).toBe(false)
     expect(canEditTask(undefined)).toBe(false)
@@ -54,5 +64,7 @@ describe('task permission helpers', () => {
     expect(canRestoreTask(undefined)).toBe(false)
     expect(canCreateProject(undefined)).toBe(false)
     expect(canEditProject(undefined)).toBe(false)
+    expect(canManageUsers(undefined)).toBe(false)
+    expect(canUpdateUserRole(undefined)).toBe(false)
   })
 })
