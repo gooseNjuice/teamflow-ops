@@ -33,6 +33,12 @@
   gap: 1rem;
 }
 
+.headerActions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
 .eyebrow {
   margin: 0;
   color: #4f46e5;
@@ -60,6 +66,38 @@
   white-space: nowrap;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: 0;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.primaryButton {
+  padding: 0.55rem 0.9rem;
+}
+
+.secondaryButton {
+  padding: 0.55rem 0.9rem;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover {
+  background: #1f2937;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .planning {
@@ -329,6 +367,65 @@
   color: #b91c1c;
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(17 24 39 / 0.55);
+  padding: 1rem;
+}
+
+.projectModal {
+  width: min(760px, 100%);
+  max-height: min(820px, calc(100vh - 2rem));
+  overflow-y: auto;
+  border-radius: 1.25rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 24px 80px rgb(15 23 42 / 0.28);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modalHeader h2 {
+  margin: 0.35rem 0 0;
+  color: #111827;
+  font-size: 1.35rem;
+}
+
+.feedbackPanel {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  border-radius: 0.875rem;
+  background: #fef2f2;
+  padding: 0.85rem 1rem;
+}
+
+.feedbackPanel h4,
+.feedbackPanel p {
+  margin: 0;
+}
+
+.feedbackPanel h4 {
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.feedbackPanel p {
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
 @media (max-width: 960px) {
   .detailsGrid,
   .metricsGrid,
@@ -343,6 +440,15 @@
     flex-direction: column;
   }
 
+  .headerActions {
+    display: grid;
+    width: 100%;
+  }
+
+  .headerActions button {
+    width: 100%;
+  }
+
   .detailsGrid,
   .metricsGrid,
   .breakdownGrid,
@@ -353,5 +459,9 @@
   .sectionHeader {
     align-items: flex-start;
     display: grid;
+  }
+
+  .modalHeader {
+    flex-direction: column;
   }
 }

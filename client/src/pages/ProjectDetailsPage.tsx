@@ -1,5 +1,6 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import ProjectForm, { type ProjectFormValues } from '../components/ProjectForm'
 import TaskDetailsModal from '../components/TaskDetailsModal'
 import {
   getOverdueTasks,
@@ -7,9 +8,14 @@ import {
   getTasksByStatus,
 } from '../features/dashboard/utils/dashboardMetrics'
 import { useGetCurrentUserQuery } from '../shared/api/authApi'
-import { useGetProjectQuery } from '../shared/api/projectsApi'
+import {
+  useGetProjectQuery,
+  useUpdateProjectMutation,
+} from '../shared/api/projectsApi'
 import { useGetTasksQuery } from '../shared/api/tasksApi'
 import { useGetUsersQuery } from '../shared/api/usersApi'
+import { getPermissionAwareErrorMessage } from '../shared/lib/apiErrors'
+import { canEditProject } from '../shared/lib/permissions'
 import type { ProjectStatus } from '../shared/types/project'
 import type { Task, TaskPriority, TaskStatus } from '../shared/types/task'
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/ApiState'
@@ -66,6 +72,8 @@ function ProjectDetailsPage() {
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [assigneeFilter, setAssigneeFilter] = useState('all')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
+  const [editProjectError, setEditProjectError] = useState<string | null>(null)
   const { data: currentUser } = useGetCurrentUserQuery()
   const {
     data: project,
@@ -93,6 +101,11 @@ function ProjectDetailsPage() {
     isError: isArchivedTasksError,
     isLoading: isArchivedTasksLoading,
   } = useGetTasksQuery({ archived: true })
+  const [updateProject, { isLoading: isUpdatingProject }] =
+    useUpdateProjectMutation()
+  const userCanEditProject = canEditProject(currentUser?.role)
+  const readOnlyProjectMessage =
+    'Your role can view projects, but cannot change them.'
   const isLoading =
     isProjectLoading ||
     isUsersLoading ||
@@ -166,6 +179,33 @@ function ProjectDetailsPage() {
     }
   }
 
+  async function handleEditProject(values: ProjectFormValues) {
+    if (!project || !userCanEditProject) {
+      setEditProjectError(readOnlyProjectMessage)
+      return
+    }
+
+    setEditProjectError(null)
+
+    try {
+      await updateProject({
+        id: project.id,
+        name: values.name,
+        description: values.description,
+        status: values.status,
+        ownerId: values.ownerId,
+      }).unwrap()
+      setIsEditProjectOpen(false)
+    } catch (error) {
+      setEditProjectError(
+        getPermissionAwareErrorMessage(
+          error,
+          'Could not update project. Please try again.',
+        ),
+      )
+    }
+  }
+
   return (
     <div className={styles.projectDetailsPage}>
       <Link className={styles.backLink} to="/projects">
@@ -199,9 +239,27 @@ function ProjectDetailsPage() {
                 <h2 id="project-title">{project.name}</h2>
                 <p>{project.description}</p>
               </div>
-              <span className={`${styles.statusPill} ${styles[project.status]}`}>
-                {projectStatusLabels[project.status]}
-              </span>
+              <div className={styles.headerActions}>
+                <span className={`${styles.statusPill} ${styles[project.status]}`}>
+                  {projectStatusLabels[project.status]}
+                </span>
+                <button
+                  className={styles.primaryButton}
+                  type="button"
+                  disabled={!userCanEditProject}
+                  title={!userCanEditProject ? readOnlyProjectMessage : undefined}
+                  onClick={() => {
+                    if (!userCanEditProject) {
+                      return
+                    }
+
+                    setEditProjectError(null)
+                    setIsEditProjectOpen(true)
+                  }}
+                >
+                  Edit Project
+                </button>
+              </div>
             </header>
 
             <dl className={styles.detailsGrid}>
@@ -431,6 +489,57 @@ function ProjectDetailsPage() {
           currentUserRole={currentUser?.role}
           onClose={() => setSelectedTask(null)}
         />
+      ) : null}
+
+      {project && isEditProjectOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={() => {
+            if (!isUpdatingProject) {
+              setIsEditProjectOpen(false)
+            }
+          }}
+        >
+          <section
+            aria-labelledby="edit-project-title"
+            aria-modal="true"
+            className={styles.projectModal}
+            role="dialog"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>Edit project</p>
+                <h2 id="edit-project-title">Update project</h2>
+              </div>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={isUpdatingProject}
+                onClick={() => setIsEditProjectOpen(false)}
+              >
+                Close
+              </button>
+            </header>
+
+            {editProjectError ? (
+              <section className={styles.feedbackPanel} aria-live="polite">
+                <h4>Update failed</h4>
+                <p>{editProjectError}</p>
+              </section>
+            ) : null}
+
+            <ProjectForm
+              key={project.id}
+              users={users}
+              initialProject={project}
+              isSubmitting={isUpdatingProject}
+              submitLabel="Save project"
+              onSubmit={handleEditProject}
+            />
+          </section>
+        </div>
       ) : null}
     </div>
   )
