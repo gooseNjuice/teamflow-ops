@@ -2,6 +2,7 @@ import type { UserRole } from '../types/user'
 
 const taskEditorRoles: UserRole[] = ['admin', 'manager', 'developer']
 const taskArchiveRoles: UserRole[] = ['admin', 'manager']
+const projectEditorRoles: UserRole[] = ['admin', 'manager']
 
 export function canCreateTask(role: UserRole | undefined) {
   return !!role && taskEditorRoles.includes(role)
@@ -21,4 +22,12 @@ export function canArchiveTask(role: UserRole | undefined) {
 
 export function canRestoreTask(role: UserRole | undefined) {
   return canArchiveTask(role)
+}
+
+export function canCreateProject(role: UserRole | undefined) {
+  return !!role && projectEditorRoles.includes(role)
+}
+
+export function canEditProject(role: UserRole | undefined) {
+  return canCreateProject(role)
 }

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   canArchiveTask,
   canCommentOnTask,
+  canCreateProject,
   canCreateTask,
+  canEditProject,
   canEditTask,
   canRestoreTask,
 } from './permissions'
@@ -14,12 +16,16 @@ describe('task permission helpers', () => {
     expect(canCommentOnTask('admin')).toBe(true)
     expect(canArchiveTask('admin')).toBe(true)
     expect(canRestoreTask('admin')).toBe(true)
+    expect(canCreateProject('admin')).toBe(true)
+    expect(canEditProject('admin')).toBe(true)
 
     expect(canCreateTask('manager')).toBe(true)
     expect(canEditTask('manager')).toBe(true)
     expect(canCommentOnTask('manager')).toBe(true)
     expect(canArchiveTask('manager')).toBe(true)
     expect(canRestoreTask('manager')).toBe(true)
+    expect(canCreateProject('manager')).toBe(true)
+    expect(canEditProject('manager')).toBe(true)
   })
 
   it('allows developers to create and edit tasks only', () => {
@@ -28,6 +34,8 @@ describe('task permission helpers', () => {
     expect(canCommentOnTask('developer')).toBe(true)
     expect(canArchiveTask('developer')).toBe(false)
     expect(canRestoreTask('developer')).toBe(false)
+    expect(canCreateProject('developer')).toBe(false)
+    expect(canEditProject('developer')).toBe(false)
   })
 
   it('keeps viewers and missing roles read-only', () => {
@@ -36,11 +44,15 @@ describe('task permission helpers', () => {
     expect(canCommentOnTask('viewer')).toBe(false)
     expect(canArchiveTask('viewer')).toBe(false)
     expect(canRestoreTask('viewer')).toBe(false)
+    expect(canCreateProject('viewer')).toBe(false)
+    expect(canEditProject('viewer')).toBe(false)
 
     expect(canCreateTask(undefined)).toBe(false)
     expect(canEditTask(undefined)).toBe(false)
     expect(canCommentOnTask(undefined)).toBe(false)
     expect(canArchiveTask(undefined)).toBe(false)
     expect(canRestoreTask(undefined)).toBe(false)
+    expect(canCreateProject(undefined)).toBe(false)
+    expect(canEditProject(undefined)).toBe(false)
   })
 })
