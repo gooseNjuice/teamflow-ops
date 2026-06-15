@@ -8,3 +8,10 @@ export type User = {
   avatarUrl?: string
   createdAt: string
 }
+
+export type UpdateUserRequest = {
+  id: string
+  name?: string
+  role?: UserRole
+  avatarUrl?: string
+}
