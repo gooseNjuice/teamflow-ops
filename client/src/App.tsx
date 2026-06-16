@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Navigate,
   NavLink,
@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom'
 import RequireAuth from './components/RequireAuth'
 import { useAppDispatch } from './app/hooks'
+import CommandPalette from './features/search/components/CommandPalette'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
@@ -71,6 +72,7 @@ function App() {
   const location = useLocation()
   const navigate = useNavigate()
   const token = useAuthToken()
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const {
     data: currentUser,
     error: currentUserError,
@@ -87,9 +89,26 @@ function App() {
     }
   }, [currentUserError, dispatch, navigate])
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!token || event.key.toLowerCase() !== 'k') {
+        return
+      }
+
+      if (event.metaKey || event.ctrlKey) {
+        event.preventDefault()
+        setIsCommandPaletteOpen(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [token])
+
   function handleLogout() {
     clearToken()
     dispatch(baseApi.util.resetApiState())
+    setIsCommandPaletteOpen(false)
     navigate('/login', { replace: true })
   }
 
@@ -122,6 +141,17 @@ function App() {
         <header className={styles.topBar}>
           <h1>{getPageTitle(location.pathname)}</h1>
           <div className={styles.userControls}>
+            {token ? (
+              <button
+                className={styles.searchButton}
+                type="button"
+                onClick={() => setIsCommandPaletteOpen(true)}
+              >
+                <span>Search workspace</span>
+                <kbd>Ctrl/Cmd K</kbd>
+              </button>
+            ) : null}
+
             {currentUser ? (
               <div className={styles.userSummary}>
                 <span>{currentUser.name}</span>
@@ -206,6 +236,13 @@ function App() {
           </Routes>
         </main>
       </div>
+
+      {token ? (
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+        />
+      ) : null}
     </div>
   )
 }
