@@ -69,6 +69,43 @@
   gap: 0.75rem;
 }
 
+.searchButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 220px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.55rem 0.5rem 0.85rem;
+}
+
+.searchButton:hover,
+.searchButton:focus-visible {
+  border-color: #c7d2fe;
+  background: #f9fafb;
+  outline: none;
+}
+
+.searchButton span {
+  flex: 1;
+  text-align: left;
+}
+
+.searchButton kbd {
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.45rem;
+}
+
 .userBadge,
 .userSummary {
   border-radius: 999px;
@@ -119,5 +156,16 @@
 
   .sidebar {
     padding-bottom: 1rem;
+  }
+
+  .topBar,
+  .userControls {
+    align-items: flex-start;
+    display: grid;
+  }
+
+  .searchButton {
+    min-width: 0;
+    width: 100%;
   }
 }

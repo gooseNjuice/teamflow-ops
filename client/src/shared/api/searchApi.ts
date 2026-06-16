@@ -2,7 +2,7 @@ import { skipToken } from '@reduxjs/toolkit/query'
 import { baseApi } from './baseApi'
 import type { SearchResult } from '../types/search'
 
-export const emptySearchToken = skipToken
+export const emptySearchToken: typeof skipToken = skipToken
 
 export const searchApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
