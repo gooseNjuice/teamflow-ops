@@ -15,6 +15,7 @@ import PlaceholderPage from './pages/PlaceholderPage'
 import ProjectDetailsPage from './pages/ProjectDetailsPage'
 import ProjectsPage from './pages/ProjectsPage'
 import RegisterPage from './pages/RegisterPage'
+import TeamPage from './pages/TeamPage'
 import TasksPage from './pages/TasksPage'
 import { baseApi } from './shared/api/baseApi'
 import { useGetCurrentUserQuery } from './shared/api/authApi'
@@ -31,12 +32,6 @@ const navigationItems = [
 ]
 
 const placeholderPages = [
-  {
-    path: '/team',
-    eyebrow: 'Team',
-    title: 'Team',
-    description: 'Team member profiles, roles, and availability will live here.',
-  },
   {
     path: '/settings',
     eyebrow: 'Settings',
@@ -180,6 +175,14 @@ function App() {
               element={
                 <RequireAuth>
                   <TasksPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/team"
+              element={
+                <RequireAuth>
+                  <TeamPage />
                 </RequireAuth>
               }
             />

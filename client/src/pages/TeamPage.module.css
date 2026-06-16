@@ -1,0 +1,292 @@
+.teamPage {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.hero,
+.filters,
+.memberCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.hero {
+  max-width: 760px;
+  padding: 1.5rem;
+}
+
+.hero h2 {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 1.5rem;
+}
+
+.hero p {
+  margin: 0;
+  color: #4b5563;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(160px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.filters label {
+  display: grid;
+  gap: 0.5rem;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.filters input,
+.filters select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.75rem 0.9rem;
+  color: #111827;
+  font: inherit;
+}
+
+.filters input:focus,
+.filters select:focus {
+  border-color: #4f46e5;
+  outline: 3px solid #e0e7ff;
+}
+
+.memberGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.memberCard {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.memberHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.85rem;
+}
+
+.memberHeader h3 {
+  margin: 0 0 0.25rem;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.memberHeader p {
+  overflow: hidden;
+  margin: 0;
+  color: #6b7280;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar,
+.initials {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+}
+
+.avatar {
+  object-fit: cover;
+}
+
+.initials {
+  display: grid;
+  place-items: center;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.rolePill {
+  align-self: start;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.manager {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.developer {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.viewer {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.memberStats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.memberStats div {
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  padding: 0.75rem;
+}
+
+.memberStats dt {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.memberStats dd {
+  margin: 0.25rem 0 0;
+  color: #111827;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.secondaryButton {
+  justify-self: end;
+  border: 0;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.55rem 0.9rem;
+  white-space: nowrap;
+}
+
+.secondaryButton:hover {
+  background: #1f2937;
+}
+
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(17 24 39 / 0.55);
+  padding: 1rem;
+}
+
+.userModal {
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100vh - 2rem));
+  overflow-y: auto;
+  border-radius: 1.25rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 24px 80px rgb(15 23 42 / 0.28);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modalHeader h2 {
+  margin: 0.35rem 0 0;
+  color: #111827;
+  font-size: 1.35rem;
+}
+
+.feedbackPanel {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  border-radius: 0.875rem;
+  background: #fef2f2;
+  padding: 0.85rem 1rem;
+}
+
+.feedbackPanel h4,
+.feedbackPanel p {
+  margin: 0;
+}
+
+.feedbackPanel h4 {
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.feedbackPanel p {
+  color: #b91c1c;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .memberStats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .filters,
+  .memberGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .memberHeader {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .rolePill {
+    grid-column: 1 / -1;
+    width: fit-content;
+  }
+
+  .memberStats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .modalHeader {
+    flex-direction: column;
+  }
+}
